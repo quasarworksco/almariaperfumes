@@ -28,6 +28,13 @@
 
 [hidden] { display: none !important; }
 
+/* Iconos SVG */
+.icono { width: 16px; height: 16px; flex-shrink: 0; }
+.nav-item .icono { width: 18px; height: 18px; }
+.btn-icon .icono { width: 15px; height: 15px; }
+.mini-row .icono.mov { width: 13px; height: 13px; vertical-align: -2px; }
+.td-foto-vacia .icono { width: 17px; height: 17px; }
+
 body {
   font-family: var(--font-body);
   background: var(--bg);

@@ -54,6 +54,22 @@ function toast(msg, tipo = "") {
 
 const saldoVenta = (v) => Math.max(0, (v.total || 0) - (v.pagado || 0));
 
+// ─── Iconos SVG (trazo, heredan el color del texto) ──────────
+const ICONS = {
+  editar: '<path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.12 2.12 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>',
+  basura: '<polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>',
+  stock: '<line x1="8" y1="3" x2="8" y2="21"/><polyline points="4 7 8 3 12 7"/><line x1="16" y1="3" x2="16" y2="21"/><polyline points="12 17 16 21 20 17"/>',
+  arriba: '<line x1="12" y1="19" x2="12" y2="5"/><polyline points="5 12 12 5 19 12"/>',
+  abajo: '<line x1="12" y1="5" x2="12" y2="19"/><polyline points="19 12 12 19 5 12"/>',
+  camara: '<path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/>',
+  subir: '<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/>',
+  dolar: '<line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>',
+  gota: '<path d="M12 2.69l5.66 5.66a8 8 0 1 1-11.31 0z"/>',
+};
+
+const icon = (nombre, cls = "") =>
+  `<svg class="icono ${cls}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${ICONS[nombre]}</svg>`;
+
 /**
  * Sube una imagen a Cloudinary (preset sin firma) y devuelve la URL
  * optimizada (formato y calidad automáticos, máx. 800px de ancho).
@@ -231,7 +247,7 @@ function renderProductos() {
           <span class="td-producto">
             ${p.imagen
               ? `<img class="td-foto" src="${esc(p.imagen)}" alt="" loading="lazy" />`
-              : '<span class="td-foto td-foto-vacia">🧴</span>'}
+              : `<span class="td-foto td-foto-vacia">${icon("gota")}</span>`}
             <span>${esc(p.nombre)}
               ${p.precioOferta ? '<span class="badge oferta">Oferta</span>' : ""}
             </span>
@@ -243,9 +259,9 @@ function renderProductos() {
         <td class="num">${p.precioOferta ? fmt(p.precioOferta) : '<span class="muted">—</span>'}</td>
         <td class="num"><span class="stock-pill ${pill}">${stock}</span></td>
         <td class="acciones">
-          <button class="btn-icon" data-accion="stock" title="Carga / descarga de stock">⇅</button>
-          <button class="btn-icon" data-accion="editar" title="Editar">✎</button>
-          <button class="btn-icon danger" data-accion="eliminar" title="Eliminar">🗑</button>
+          <button class="btn-icon" data-accion="stock" title="Carga / descarga de stock">${icon("stock")}</button>
+          <button class="btn-icon" data-accion="editar" title="Editar">${icon("editar")}</button>
+          <button class="btn-icon danger" data-accion="eliminar" title="Eliminar">${icon("basura")}</button>
         </td>
       </tr>`;
     })
@@ -254,7 +270,7 @@ function renderProductos() {
   $("#prod-movimientos").innerHTML = S.movimientos.length
     ? `<div class="mini-list">${S.movimientos.slice(0, 12).map((m) => `
         <div class="mini-row">
-          <span>${m.tipo === "entrada" ? "⬆" : "⬇"} ${esc(m.nombre)}
+          <span>${m.tipo === "entrada" ? icon("arriba", "mov") : icon("abajo", "mov")} ${esc(m.nombre)}
             <span class="muted">· ${esc(m.motivo || m.tipo)} · ${fmtFecha(m.fecha)}</span></span>
           <strong>${m.tipo === "entrada" ? "+" : "−"}${m.cantidad}</strong>
         </div>`).join("")}</div>`
@@ -294,7 +310,7 @@ function modalProducto(p = null) {
             </div>
             <div class="img-upload-controls">
               <input type="file" id="img-file" accept="image/*" hidden />
-              <button type="button" class="btn btn-ghost" id="img-subir">📷 ${p?.imagen ? "Cambiar foto" : "Subir foto"}</button>
+              <button type="button" class="btn btn-ghost" id="img-subir">${icon("camara")} ${p?.imagen ? "Cambiar foto" : "Subir foto"}</button>
               <button type="button" class="btn btn-danger" id="img-quitar" ${p?.imagen ? "" : "hidden"}>Quitar</button>
               <p class="hint" id="img-status">JPG o PNG · se sube a Cloudinary y se muestra en la tienda</p>
             </div>
@@ -328,7 +344,7 @@ function modalProducto(p = null) {
     $preview.hidden = !url;
     $placeholder.hidden = !!url;
     $quitar.hidden = !url;
-    $subir.innerHTML = url ? "📷 Cambiar foto" : "📷 Subir foto";
+    $subir.innerHTML = icon("camara") + (url ? " Cambiar foto" : " Subir foto");
   }
 
   $subir.addEventListener("click", () => $file.click());
@@ -341,7 +357,7 @@ function modalProducto(p = null) {
     const archivo = $file.files[0];
     if (!archivo) return;
     if (archivo.size > 10 * 1024 * 1024) {
-      $status.textContent = "⚠ La imagen supera 10 MB. Usa una más liviana.";
+      $status.textContent = "La imagen supera 10 MB. Usa una más liviana.";
       return;
     }
     $subir.disabled = true;
@@ -352,7 +368,7 @@ function modalProducto(p = null) {
       mostrarFoto(url);
       $status.textContent = "Foto subida ✓ Guarda el producto para aplicarla.";
     } catch (err) {
-      $status.textContent = "⚠ Error al subir: " + err.message;
+      $status.textContent = "Error al subir: " + err.message;
     } finally {
       $subir.disabled = false;
       $guardar.disabled = false;
@@ -405,8 +421,8 @@ function modalStock(p) {
       <div class="form-grid">
         <label class="field"><span>Tipo</span>
           <select name="tipo">
-            <option value="entrada">⬆ Entrada (carga)</option>
-            <option value="salida">⬇ Salida (descarga)</option>
+            <option value="entrada">Entrada (carga)</option>
+            <option value="salida">Salida (descarga)</option>
           </select></label>
         <label class="field"><span>Cantidad</span>
           <input name="cantidad" type="number" min="1" step="1" value="1" required /></label>
@@ -503,7 +519,7 @@ async function importarCatalogo() {
   } catch (err) {
     toast("Error al importar: " + err.message, "error");
     btn.disabled = false;
-    btn.textContent = "⬆ Importar catálogo local (260 perfumes)";
+    btn.innerHTML = icon("subir") + " Importar catálogo local (260 perfumes)";
   }
 }
 
@@ -540,8 +556,8 @@ function renderVentas() {
         <td class="num ${saldo > 0 ? "" : "muted"}">${fmt(saldo)}</td>
         <td><span class="badge ${saldo > 0 ? "pendiente" : "pagada"}">${saldo > 0 ? "Pendiente" : "Pagada"}</span></td>
         <td class="acciones">
-          ${saldo > 0 ? '<button class="btn-icon" data-accion="abonar" title="Registrar abono">＋$</button>' : ""}
-          <button class="btn-icon danger" data-accion="eliminar" title="Eliminar venta">🗑</button>
+          ${saldo > 0 ? `<button class="btn-icon" data-accion="abonar" title="Registrar abono">${icon("dolar")}</button>` : ""}
+          <button class="btn-icon danger" data-accion="eliminar" title="Eliminar venta">${icon("basura")}</button>
         </td>
       </tr>`;
     })
@@ -834,8 +850,8 @@ function renderProveedores() {
         <td>${esc(pr.correo || "—")}</td>
         <td class="muted">${esc(pr.notas || "")}</td>
         <td class="acciones">
-          <button class="btn-icon" data-accion="editar" title="Editar">✎</button>
-          <button class="btn-icon danger" data-accion="eliminar" title="Eliminar">🗑</button>
+          <button class="btn-icon" data-accion="editar" title="Editar">${icon("editar")}</button>
+          <button class="btn-icon danger" data-accion="eliminar" title="Eliminar">${icon("basura")}</button>
         </td>
       </tr>`;
     })

@@ -10,11 +10,11 @@ Sitio web de comercio electrónico para venta de perfumes, con catálogo de 260 
 
 ## Funcionalidades
 
-- 🔍 **Búsqueda en tiempo real** por nombre de perfume o casa (ignora acentos).
-- 🏷️ **Filtro por casa/marca** mediante selector y chips de casas destacadas.
-- 💰 **Precios al mayor y al detal** con selector en el encabezado; la tarjeta muestra el precio activo y el alterno.
-- ↕️ **Ordenamiento** por casa, nombre o precio.
-- 🃏 Tarjetas de producto con casa, nombre y precio en cuadrícula adaptable.
+- **Búsqueda en tiempo real** por nombre de perfume o casa (ignora acentos).
+- **Filtro por casa/marca** mediante selector y chips de casas destacadas.
+- **Precios al mayor y al detal** con selector en el encabezado; la tarjeta muestra el precio activo y el alterno.
+- **Ordenamiento** por casa, nombre o precio.
+- Tarjetas de producto con casa, nombre y precio en cuadrícula adaptable.
 
 ## Cómo ejecutarlo
 
