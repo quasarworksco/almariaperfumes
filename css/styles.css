@@ -1,0 +1,558 @@
+/* ═══════════════════════════════════════════════════
+   Almaria Perfumes — Hoja de estilos
+   Estilo: minimalista, elegante, responsive
+   ═══════════════════════════════════════════════════ */
+
+:root {
+  --bg: #faf8f5;
+  --surface: #ffffff;
+  --ink: #1c1a17;
+  --ink-soft: #6b655c;
+  --ink-faint: #a39c90;
+  --gold: #b08d46;
+  --gold-soft: #d9c294;
+  --line: #e8e2d8;
+  --shadow: 0 2px 12px rgba(28, 26, 23, 0.06);
+  --shadow-hover: 0 12px 32px rgba(28, 26, 23, 0.12);
+  --radius: 14px;
+  --font-display: "Cormorant Garamond", Georgia, serif;
+  --font-body: "Jost", "Segoe UI", sans-serif;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+html { scroll-behavior: smooth; }
+
+body {
+  font-family: var(--font-body);
+  background: var(--bg);
+  color: var(--ink);
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+}
+
+.container {
+  width: min(1200px, 92%);
+  margin-inline: auto;
+}
+
+/* ══════════ HEADER ══════════ */
+
+.site-header {
+  position: sticky;
+  top: 0;
+  z-index: 50;
+  background: rgba(250, 248, 245, 0.92);
+  backdrop-filter: blur(12px);
+  border-bottom: 1px solid var(--line);
+}
+
+.header-inner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding-block: 0.85rem;
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  text-decoration: none;
+  color: var(--ink);
+}
+
+.brand-mark {
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  border: 1px solid var(--gold);
+  border-radius: 50%;
+  font-family: var(--font-display);
+  font-size: 1.35rem;
+  font-weight: 600;
+  color: var(--gold);
+}
+
+.brand-text {
+  font-family: var(--font-display);
+  font-size: 1.45rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+}
+
+.brand-text em {
+  font-style: italic;
+  font-weight: 500;
+  color: var(--gold);
+}
+
+/* Toggle Detal / Mayor */
+
+.price-toggle {
+  display: flex;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  padding: 4px;
+  box-shadow: var(--shadow);
+}
+
+.price-toggle-btn {
+  border: none;
+  background: transparent;
+  font-family: var(--font-body);
+  font-size: 0.85rem;
+  font-weight: 500;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--ink-soft);
+  padding: 0.45rem 1.1rem;
+  border-radius: 999px;
+  cursor: pointer;
+  transition: all 0.25s ease;
+}
+
+.price-toggle-btn.is-active {
+  background: var(--ink);
+  color: #fff;
+}
+
+/* ══════════ HERO ══════════ */
+
+.hero {
+  text-align: center;
+  padding: clamp(3rem, 8vw, 5.5rem) 0 clamp(2.5rem, 6vw, 4rem);
+  background:
+    radial-gradient(ellipse 60% 80% at 50% -20%, rgba(176, 141, 70, 0.12), transparent),
+    var(--bg);
+}
+
+.hero-kicker {
+  font-size: 0.8rem;
+  font-weight: 500;
+  letter-spacing: 0.35em;
+  text-transform: uppercase;
+  color: var(--gold);
+  margin-bottom: 1rem;
+}
+
+.hero-title {
+  font-family: var(--font-display);
+  font-size: clamp(2.6rem, 7vw, 4.5rem);
+  font-weight: 600;
+  line-height: 1.1;
+  margin-bottom: 1rem;
+}
+
+.hero-title em {
+  font-style: italic;
+  color: var(--gold);
+}
+
+.hero-subtitle {
+  max-width: 46ch;
+  margin: 0 auto 2.2rem;
+  color: var(--ink-soft);
+  font-weight: 300;
+  font-size: 1.05rem;
+}
+
+/* Barra de búsqueda */
+
+.search-wrap {
+  position: relative;
+  max-width: 560px;
+  margin-inline: auto;
+}
+
+.search-icon {
+  position: absolute;
+  left: 1.2rem;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 20px;
+  height: 20px;
+  color: var(--ink-faint);
+  pointer-events: none;
+}
+
+.search-input {
+  width: 100%;
+  font-family: var(--font-body);
+  font-size: 1rem;
+  font-weight: 300;
+  color: var(--ink);
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  padding: 1rem 3.2rem 1rem 3.4rem;
+  box-shadow: var(--shadow);
+  transition: border-color 0.25s ease, box-shadow 0.25s ease;
+}
+
+.search-input::placeholder { color: var(--ink-faint); }
+
+.search-input:focus {
+  outline: none;
+  border-color: var(--gold);
+  box-shadow: 0 0 0 4px rgba(176, 141, 70, 0.12);
+}
+
+.search-input::-webkit-search-cancel-button { display: none; }
+
+.search-clear {
+  position: absolute;
+  right: 0.8rem;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 32px;
+  height: 32px;
+  border: none;
+  border-radius: 50%;
+  background: var(--line);
+  color: var(--ink-soft);
+  font-size: 1.1rem;
+  line-height: 1;
+  cursor: pointer;
+  transition: background 0.2s ease;
+}
+
+.search-clear:hover { background: var(--gold-soft); color: var(--ink); }
+
+/* ══════════ TOOLBAR / FILTROS ══════════ */
+
+.catalog { padding-bottom: 5rem; }
+
+.toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 1rem 1.5rem;
+  padding: 1.5rem 0 1.2rem;
+  border-top: 1px solid var(--line);
+}
+
+.filter-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+}
+
+.filter-label {
+  font-size: 0.72rem;
+  font-weight: 500;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--ink-faint);
+}
+
+.select-wrap { position: relative; }
+
+.select-wrap::after {
+  content: "";
+  position: absolute;
+  right: 1rem;
+  top: 50%;
+  width: 8px;
+  height: 8px;
+  border-right: 1.5px solid var(--ink-soft);
+  border-bottom: 1.5px solid var(--ink-soft);
+  transform: translateY(-70%) rotate(45deg);
+  pointer-events: none;
+}
+
+.filter-select {
+  appearance: none;
+  -webkit-appearance: none;
+  font-family: var(--font-body);
+  font-size: 0.92rem;
+  color: var(--ink);
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 0.6rem 2.4rem 0.6rem 1rem;
+  min-width: 210px;
+  cursor: pointer;
+  transition: border-color 0.2s ease;
+}
+
+.filter-select:focus {
+  outline: none;
+  border-color: var(--gold);
+}
+
+.results-count {
+  margin-left: auto;
+  font-size: 0.9rem;
+  color: var(--ink-soft);
+  font-weight: 300;
+}
+
+.results-count strong { color: var(--ink); font-weight: 600; }
+
+/* Chips de casas */
+
+.brand-chips {
+  display: flex;
+  gap: 0.5rem;
+  overflow-x: auto;
+  padding-bottom: 1.2rem;
+  scrollbar-width: none;
+}
+
+.brand-chips::-webkit-scrollbar { display: none; }
+
+.chip {
+  flex-shrink: 0;
+  font-family: var(--font-body);
+  font-size: 0.82rem;
+  font-weight: 400;
+  color: var(--ink-soft);
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  padding: 0.4rem 1rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+}
+
+.chip:hover { border-color: var(--gold); color: var(--ink); }
+
+.chip.is-active {
+  background: var(--ink);
+  border-color: var(--ink);
+  color: #fff;
+}
+
+/* ══════════ GRID DE PRODUCTOS ══════════ */
+
+.product-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 1.4rem;
+}
+
+.product-card {
+  display: flex;
+  flex-direction: column;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  overflow: hidden;
+  box-shadow: var(--shadow);
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+  animation: card-in 0.4s ease both;
+}
+
+@keyframes card-in {
+  from { opacity: 0; transform: translateY(12px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.product-card:hover {
+  transform: translateY(-5px);
+  box-shadow: var(--shadow-hover);
+}
+
+/* Visual del producto (monograma sobre degradado) */
+
+.card-visual {
+  position: relative;
+  aspect-ratio: 5 / 4;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+}
+
+.card-visual img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.card-monogram {
+  font-family: var(--font-display);
+  font-size: 3.4rem;
+  font-weight: 500;
+  font-style: italic;
+  color: rgba(255, 255, 255, 0.9);
+  text-shadow: 0 2px 14px rgba(0, 0, 0, 0.18);
+  user-select: none;
+}
+
+.card-badge {
+  position: absolute;
+  top: 0.75rem;
+  left: 0.75rem;
+  font-size: 0.66rem;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--ink);
+  background: rgba(255, 255, 255, 0.88);
+  backdrop-filter: blur(4px);
+  border-radius: 999px;
+  padding: 0.28rem 0.7rem;
+}
+
+.card-body {
+  display: flex;
+  flex-direction: column;
+  flex-grow: 1;
+  padding: 1.1rem 1.2rem 1.25rem;
+}
+
+.card-brand {
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--gold);
+  margin-bottom: 0.25rem;
+}
+
+.card-name {
+  font-family: var(--font-display);
+  font-size: 1.32rem;
+  font-weight: 600;
+  line-height: 1.2;
+  margin-bottom: 0.9rem;
+}
+
+.card-footer {
+  margin-top: auto;
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 0.5rem;
+  padding-top: 0.8rem;
+  border-top: 1px solid var(--line);
+}
+
+.card-price-label {
+  display: block;
+  font-size: 0.66rem;
+  font-weight: 500;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--ink-faint);
+}
+
+.card-price {
+  font-family: var(--font-display);
+  font-size: 1.55rem;
+  font-weight: 700;
+  color: var(--ink);
+  line-height: 1.1;
+}
+
+.card-price-alt {
+  font-size: 0.78rem;
+  color: var(--ink-faint);
+  font-weight: 300;
+  text-align: right;
+}
+
+/* ══════════ ESTADO VACÍO ══════════ */
+
+.empty-state {
+  text-align: center;
+  padding: 4.5rem 1rem;
+}
+
+.empty-icon {
+  display: grid;
+  place-items: center;
+  width: 64px;
+  height: 64px;
+  margin: 0 auto 1.2rem;
+  border: 1px solid var(--line);
+  border-radius: 50%;
+  font-size: 1.4rem;
+  color: var(--ink-faint);
+}
+
+.empty-state h2 {
+  font-family: var(--font-display);
+  font-size: 1.8rem;
+  font-weight: 600;
+  margin-bottom: 0.5rem;
+}
+
+.empty-state p { color: var(--ink-soft); font-weight: 300; margin-bottom: 1.6rem; }
+
+.btn-reset {
+  font-family: var(--font-body);
+  font-size: 0.85rem;
+  font-weight: 500;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: #fff;
+  background: var(--ink);
+  border: none;
+  border-radius: 999px;
+  padding: 0.8rem 2rem;
+  cursor: pointer;
+  transition: background 0.25s ease;
+}
+
+.btn-reset:hover { background: var(--gold); }
+
+/* ══════════ FOOTER ══════════ */
+
+.site-footer {
+  background: var(--ink);
+  color: rgba(255, 255, 255, 0.75);
+  padding: 3rem 0;
+  text-align: center;
+}
+
+.footer-brand {
+  font-family: var(--font-display);
+  font-size: 1.6rem;
+  font-weight: 600;
+  color: #fff;
+  margin-bottom: 0.4rem;
+}
+
+.footer-brand em { font-style: italic; color: var(--gold-soft); }
+
+.footer-note {
+  font-size: 0.85rem;
+  font-weight: 300;
+  letter-spacing: 0.05em;
+  margin-bottom: 1.4rem;
+}
+
+.footer-copy { font-size: 0.75rem; color: rgba(255, 255, 255, 0.4); }
+
+/* ══════════ RESPONSIVE ══════════ */
+
+@media (max-width: 640px) {
+  .header-inner {
+    flex-direction: column;
+    gap: 0.6rem;
+    padding-block: 0.7rem;
+  }
+
+  .toolbar { flex-direction: column; align-items: stretch; }
+
+  .filter-select { width: 100%; }
+
+  .results-count { margin-left: 0; }
+
+  .product-grid {
+    grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+    gap: 0.9rem;
+  }
+
+  .card-name { font-size: 1.12rem; }
+  .card-price { font-size: 1.3rem; }
+  .card-body { padding: 0.85rem 0.9rem 1rem; }
+}
