@@ -135,7 +135,6 @@
         <article class="product-card ${sinStock ? "is-agotado" : ""}" style="animation-delay:${Math.min(i * 25, 400)}ms">
           <div class="card-visual" style="background:${gradientePara(p.casa)}">
             ${imagen}
-            <span class="card-badge">${esMayor ? "Mayor" : "Detal"}</span>
             ${oferta ? '<span class="card-badge badge-oferta">Oferta</span>' : ""}
             ${sinStock ? '<span class="agotado-overlay">Agotado</span>' : ""}
           </div>

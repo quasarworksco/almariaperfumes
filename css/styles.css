@@ -12,7 +12,7 @@
   --vino: #722f37;
   --vino-claro: #c9909a;
   --vino-oscuro: #46161e;
-  --line: #ecdfe1;
+  --line: #eae7e8;
   --shadow: 0 2px 12px rgba(28, 26, 23, 0.06);
   --shadow-hover: 0 12px 32px rgba(28, 26, 23, 0.12);
   --radius: 14px;
@@ -35,6 +35,67 @@ body {
 .container {
   width: min(1200px, 92%);
   margin-inline: auto;
+}
+
+/* ══════════ FONDO DECORATIVO ANIMADO ══════════ */
+
+.bg-deco {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  overflow: hidden;
+}
+
+/* Halos suaves tipo bokeh */
+.bg-deco .halo {
+  position: absolute;
+  border-radius: 50%;
+  background: var(--vino);
+  filter: blur(70px);
+  opacity: 0.05;
+  animation: halo-flotar 26s ease-in-out infinite alternate;
+}
+
+.halo-1 { width: 380px; height: 380px; top: -120px; right: -80px; }
+.halo-2 { width: 300px; height: 300px; bottom: 8%; left: -110px; animation-delay: -9s; animation-duration: 32s; }
+.halo-3 { width: 240px; height: 240px; top: 42%; right: 12%; opacity: 0.035; animation-delay: -18s; animation-duration: 38s; }
+
+@keyframes halo-flotar {
+  from { transform: translate(0, 0) scale(1); }
+  to   { transform: translate(-36px, 42px) scale(1.12); }
+}
+
+/* Puntos flotantes */
+.bg-deco .punto {
+  position: absolute;
+  border-radius: 50%;
+  background: var(--vino);
+  opacity: 0.10;
+  animation: punto-flotar 14s ease-in-out infinite alternate;
+}
+
+.bg-deco .punto.anillo {
+  background: transparent;
+  border: 1.5px solid var(--vino);
+  opacity: 0.13;
+}
+
+.punto-1 { width: 10px; height: 10px; top: 16%; left: 7%; }
+.punto-2 { width: 6px;  height: 6px;  top: 30%; left: 88%; animation-delay: -3s; animation-duration: 17s; }
+.punto-3 { width: 14px; height: 14px; top: 62%; left: 5%;  animation-delay: -6s; animation-duration: 21s; }
+.punto-4 { width: 8px;  height: 8px;  top: 76%; left: 92%; animation-delay: -9s; animation-duration: 15s; }
+.punto-5 { width: 12px; height: 12px; top: 10%; left: 55%; animation-delay: -4s; animation-duration: 19s; }
+.punto-6 { width: 7px;  height: 7px;  top: 48%; left: 96%; animation-delay: -12s; animation-duration: 23s; }
+.punto-7 { width: 9px;  height: 9px;  top: 85%; left: 30%; animation-delay: -7s; animation-duration: 18s; }
+.punto-8 { width: 5px;  height: 5px;  top: 22%; left: 26%; animation-delay: -10s; animation-duration: 16s; }
+.punto-9 { width: 11px; height: 11px; top: 68%; left: 64%; animation-delay: -2s; animation-duration: 20s; }
+.punto-10 { width: 6px; height: 6px;  top: 40%; left: 42%; animation-delay: -14s; animation-duration: 24s; }
+
+@keyframes punto-flotar {
+  from { transform: translate(0, 0); }
+  50%  { transform: translate(12px, -26px); }
+  to   { transform: translate(-10px, 18px); }
 }
 
 /* ══════════ HEADER ══════════ */
@@ -126,9 +187,6 @@ body {
 .hero {
   text-align: center;
   padding: clamp(3rem, 8vw, 5.5rem) 0 clamp(2.5rem, 6vw, 4rem);
-  background:
-    radial-gradient(ellipse 60% 80% at 50% -20%, rgba(114, 47, 55, 0.10), transparent),
-    var(--bg);
 }
 
 .hero-kicker {
@@ -345,17 +403,21 @@ body {
   border-radius: var(--radius);
   overflow: hidden;
   box-shadow: var(--shadow);
-  transition: transform 0.3s ease, box-shadow 0.3s ease;
-  animation: card-in 0.4s ease both;
+  transition:
+    transform 0.45s cubic-bezier(0.22, 1, 0.36, 1),
+    box-shadow 0.45s cubic-bezier(0.22, 1, 0.36, 1),
+    border-color 0.3s ease;
+  animation: card-in 0.55s cubic-bezier(0.22, 1, 0.36, 1) both;
 }
 
 @keyframes card-in {
-  from { opacity: 0; transform: translateY(12px); }
-  to   { opacity: 1; transform: translateY(0); }
+  from { opacity: 0; transform: translateY(18px) scale(0.98); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
 }
 
 .product-card:hover {
-  transform: translateY(-5px);
+  transform: translateY(-6px);
+  border-color: var(--vino-claro);
   box-shadow: var(--shadow-hover);
 }
 
@@ -375,6 +437,7 @@ body {
   width: 100%;
   height: 100%;
   object-fit: cover;
+  transition: transform 0.6s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 .card-monogram {
@@ -385,6 +448,12 @@ body {
   color: rgba(255, 255, 255, 0.9);
   text-shadow: 0 2px 14px rgba(0, 0, 0, 0.18);
   user-select: none;
+  transition: transform 0.6s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.product-card:hover .card-visual img,
+.product-card:hover .card-monogram {
+  transform: scale(1.07);
 }
 
 .card-badge {
@@ -444,16 +513,21 @@ body {
   letter-spacing: 0.2em;
   text-transform: uppercase;
   color: var(--vino);
-  margin-bottom: 0.25rem;
+  margin-bottom: 0.3rem;
 }
 
 .card-name {
-  font-family: var(--font-display);
-  font-size: 1.32rem;
-  font-weight: 600;
-  line-height: 1.2;
+  font-family: var(--font-body);
+  font-size: 1.02rem;
+  font-weight: 500;
+  letter-spacing: 0.015em;
+  line-height: 1.35;
+  color: var(--ink);
   margin-bottom: 0.9rem;
+  transition: color 0.3s ease;
 }
+
+.product-card:hover .card-name { color: var(--vino); }
 
 .card-footer {
   margin-top: auto;
@@ -475,11 +549,11 @@ body {
 }
 
 .card-price {
-  font-family: var(--font-display);
-  font-size: 1.55rem;
-  font-weight: 700;
+  font-family: var(--font-body);
+  font-size: 1.18rem;
+  font-weight: 600;
   color: var(--ink);
-  line-height: 1.1;
+  line-height: 1.15;
 }
 
 .card-price-alt {
@@ -582,7 +656,15 @@ body {
     gap: 0.9rem;
   }
 
-  .card-name { font-size: 1.12rem; }
-  .card-price { font-size: 1.3rem; }
+  .card-name { font-size: 0.94rem; }
+  .card-price { font-size: 1.05rem; }
   .card-body { padding: 0.85rem 0.9rem 1rem; }
+}
+
+/* Respeta la preferencia de menos movimiento */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
 }
