@@ -3,14 +3,15 @@
    ═══════════════════════════════════════════════════ */
 
 :root {
-  --bg: #f4f2ee;
+  --bg: #ffffff;
   --surface: #ffffff;
-  --ink: #1c1a17;
-  --ink-soft: #6b655c;
-  --ink-faint: #a39c90;
-  --gold: #b08d46;
-  --gold-soft: #d9c294;
-  --line: #e5dfd5;
+  --ink: #241a1c;
+  --ink-soft: #6d6062;
+  --ink-faint: #a69598;
+  --vino: #722f37;
+  --vino-claro: #c9909a;
+  --vino-oscuro: #2f1318;
+  --line: #eadddf;
   --green: #4a7a52;
   --green-bg: #e7f0e8;
   --red: #a44444;
@@ -46,7 +47,7 @@ input, select, textarea { font-family: inherit; font-size: 0.95rem; color: var(-
   place-items: center;
   padding: 1.5rem;
   background:
-    radial-gradient(ellipse 70% 60% at 50% 0%, rgba(176, 141, 70, 0.14), transparent),
+    radial-gradient(ellipse 70% 60% at 50% 0%, rgba(114, 47, 55, 0.10), transparent),
     var(--bg);
 }
 
@@ -65,12 +66,12 @@ input, select, textarea { font-family: inherit; font-size: 0.95rem; color: var(-
   place-items: center;
   width: 54px;
   height: 54px;
-  border: 1.5px solid var(--gold);
+  border: 1.5px solid var(--vino);
   border-radius: 50%;
   font-family: var(--font-display);
   font-size: 1.8rem;
   font-style: italic;
-  color: var(--gold);
+  color: var(--vino);
   margin-bottom: 0.8rem;
 }
 
@@ -80,7 +81,7 @@ input, select, textarea { font-family: inherit; font-size: 0.95rem; color: var(-
   font-weight: 600;
 }
 
-.login-title em { font-style: italic; color: var(--gold); }
+.login-title em { font-style: italic; color: var(--vino); }
 
 .login-subtitle {
   color: var(--ink-soft);
@@ -118,8 +119,8 @@ input, select, textarea { font-family: inherit; font-size: 0.95rem; color: var(-
 
 .field input:focus, .field select:focus, .field textarea:focus, .input:focus {
   outline: none;
-  border-color: var(--gold);
-  box-shadow: 0 0 0 3px rgba(176, 141, 70, 0.12);
+  border-color: var(--vino);
+  box-shadow: 0 0 0 3px rgba(114, 47, 55, 0.10);
 }
 
 .login-error {
@@ -139,7 +140,7 @@ input, select, textarea { font-family: inherit; font-size: 0.95rem; color: var(-
   text-decoration: none;
 }
 
-.login-back:hover { color: var(--gold); }
+.login-back:hover { color: var(--vino); }
 
 /* ══════════ BOTONES ══════════ */
 
@@ -158,11 +159,11 @@ input, select, textarea { font-family: inherit; font-size: 0.95rem; color: var(-
   white-space: nowrap;
 }
 
-.btn-primary { background: var(--ink); color: #fff; }
-.btn-primary:hover { background: var(--gold); }
+.btn-primary { background: var(--vino); color: #fff; }
+.btn-primary:hover { background: var(--vino-oscuro); }
 
 .btn-ghost { background: transparent; border-color: var(--line); color: var(--ink); }
-.btn-ghost:hover { border-color: var(--gold); color: var(--gold); }
+.btn-ghost:hover { border-color: var(--vino); color: var(--vino); }
 
 .btn-danger { background: var(--red-bg); color: var(--red); }
 .btn-danger:hover { background: var(--red); color: #fff; }
@@ -182,7 +183,7 @@ input, select, textarea { font-family: inherit; font-size: 0.95rem; color: var(-
   transition: all 0.15s ease;
 }
 
-.btn-icon:hover { border-color: var(--gold); background: var(--amber-bg); }
+.btn-icon:hover { border-color: var(--vino); background: var(--amber-bg); }
 .btn-icon.danger:hover { border-color: var(--red); background: var(--red-bg); }
 
 /* ══════════ LAYOUT ADMIN ══════════ */
@@ -197,7 +198,7 @@ input, select, textarea { font-family: inherit; font-size: 0.95rem; color: var(-
   flex-shrink: 0;
   display: flex;
   flex-direction: column;
-  background: var(--ink);
+  background: var(--vino-oscuro);
   color: rgba(255, 255, 255, 0.85);
   padding: 1.4rem 0.9rem;
 }
@@ -214,12 +215,12 @@ input, select, textarea { font-family: inherit; font-size: 0.95rem; color: var(-
   place-items: center;
   width: 36px;
   height: 36px;
-  border: 1px solid var(--gold);
+  border: 1px solid var(--vino);
   border-radius: 50%;
   font-family: var(--font-display);
   font-size: 1.2rem;
   font-style: italic;
-  color: var(--gold-soft);
+  color: var(--vino-claro);
 }
 
 .brand-text {
@@ -229,7 +230,7 @@ input, select, textarea { font-family: inherit; font-size: 0.95rem; color: var(-
   color: #fff;
 }
 
-.brand-text em { font-style: italic; color: var(--gold-soft); }
+.brand-text em { font-style: italic; color: var(--vino-claro); }
 
 .sidebar-nav { display: flex; flex-direction: column; gap: 0.2rem; }
 
@@ -253,7 +254,7 @@ input, select, textarea { font-family: inherit; font-size: 0.95rem; color: var(-
 .nav-item:hover { background: rgba(255, 255, 255, 0.08); color: #fff; }
 
 .nav-item.is-active {
-  background: var(--gold);
+  background: var(--vino);
   color: #fff;
   font-weight: 500;
 }
@@ -352,7 +353,7 @@ input, select, textarea { font-family: inherit; font-size: 0.95rem; color: var(-
 
 .stat-value.green { color: var(--green); }
 .stat-value.red { color: var(--red); }
-.stat-value.gold { color: var(--gold); }
+.stat-value.vino { color: var(--vino); }
 
 .stat-hint { font-size: 0.75rem; color: var(--ink-soft); font-weight: 300; }
 
@@ -401,7 +402,7 @@ input, select, textarea { font-family: inherit; font-size: 0.95rem; color: var(-
   font-weight: 600;
   letter-spacing: 0.12em;
   text-transform: uppercase;
-  color: var(--gold);
+  color: var(--vino);
   white-space: nowrap;
 }
 

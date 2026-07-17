@@ -155,7 +155,7 @@ function renderDashboard() {
   $("#dash-stats").innerHTML = `
     ${stat("Productos", S.productos.length, "", "en catálogo")}
     ${stat("Unidades en stock", unidades, "", `inversión: ${fmt(valorInv)}`)}
-    ${stat("Ventas del mes", fmt(totalMes), "gold", `${ventasMes.length} ventas`)}
+    ${stat("Ventas del mes", fmt(totalMes), "vino", `${ventasMes.length} ventas`)}
     ${stat("Ganancia estimada", fmt(totalMes - costoMes), "green", "ventas del mes − costo")}
     ${stat("Por cobrar", fmt(porCobrar), porCobrar > 0 ? "red" : "green", `${clientesDeudores().length} deudores`)}
   `;
@@ -425,7 +425,7 @@ function renderVentas() {
   $("#ventas-stats").innerHTML = `
     ${stat("Ventas registradas", S.ventas.length, "", "histórico")}
     ${stat("Total histórico", fmt(totalHist), "", "")}
-    ${stat("Este mes", fmt(totalMes), "gold", `${ventasMes.length} ventas`)}
+    ${stat("Este mes", fmt(totalMes), "vino", `${ventasMes.length} ventas`)}
     ${stat("Por cobrar", fmt(porCobrar), porCobrar > 0 ? "red" : "green", "")}
   `;
 
@@ -893,7 +893,7 @@ async function main() {
     if (user) {
       $("#login-screen").hidden = true;
       $("#admin-app").hidden = false;
-      $("#user-email").textContent = user.email;
+      $("#user-email").textContent = (user.email || "").replace("@almariaperfumes.com", "");
       try {
         await cargarTodo();
         renderTodo();
@@ -911,12 +911,11 @@ async function main() {
     const btn = $("#login-btn");
     btn.disabled = true;
     $("#login-error").hidden = true;
+    // El usuario básico se convierte internamente en el correo de Firebase Auth
+    const usuario = $("#login-email").value.trim();
+    const email = usuario.includes("@") ? usuario : `${usuario}@almariaperfumes.com`;
     try {
-      await signInWithEmailAndPassword(
-        fb.authInst,
-        $("#login-email").value.trim(),
-        $("#login-password").value
-      );
+      await signInWithEmailAndPassword(fb.authInst, email, $("#login-password").value);
     } catch (err) {
       const msgs = {
         "auth/invalid-credential": "Correo o contraseña incorrectos.",

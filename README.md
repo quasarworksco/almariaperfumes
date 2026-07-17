@@ -35,19 +35,26 @@ Panel protegido con Firebase Authentication desde el que se gestiona todo el neg
 - **Deudores**: si el pago es menor al total, la diferencia queda como deuda; vista agrupada por cliente con registro de abonos.
 - **Proveedores**: registro, edición y eliminación, asociables a productos.
 
+### Acceso al panel
+
+El ingreso es con **usuario y contraseña** (usuario `almariaperfumes`). Internamente el usuario se convierte en el correo `almariaperfumes@almariaperfumes.com` de Firebase Authentication.
+
 ### Configuración inicial (una sola vez)
 
-1. **Habilitar el acceso**: en [Firebase Console → Authentication](https://console.firebase.google.com/project/almariaperfumes/authentication/providers), habilita el proveedor **Correo electrónico/contraseña** y en la pestaña *Users* crea tu usuario administrador.
+1. **Habilitar el acceso**: en [Firebase Console → Authentication](https://console.firebase.google.com/project/almariaperfumes/authentication/providers), habilita el proveedor **Correo electrónico/contraseña** y en la pestaña *Users* crea el usuario:
+   - Correo: `almariaperfumes@almariaperfumes.com`
+   - Contraseña: la que usarás para entrar al panel
 
-2. **Publicar reglas de Firestore** en [Firestore → Reglas](https://console.firebase.google.com/project/almariaperfumes/firestore/rules) (cambia el correo por el de tu usuario admin):
+   Luego, en **Authentication → Settings → User actions**, desactiva **“Enable create (sign-up)”** para que nadie más pueda crearse una cuenta.
+
+2. **Publicar reglas de Firestore** en [Firestore → Reglas](https://console.firebase.google.com/project/almariaperfumes/firestore/rules):
 
    ```
    rules_version = '2';
    service cloud.firestore {
      match /databases/{database}/documents {
        function esAdmin() {
-         return request.auth != null
-           && request.auth.token.email == "kevinbermudez1412@gmail.com";
+         return request.auth != null;
        }
        match /perfumes/{id} {
          allow read: if true;        // catálogo público
@@ -61,7 +68,7 @@ Panel protegido con Firebase Authentication desde el que se gestiona todo el neg
    }
    ```
 
-   Cualquier visitante puede leer el catálogo, pero solo tu usuario puede escribir. Costos, ventas, deudores y proveedores son completamente privados — **los costos nunca se guardan en la colección pública**.
+   Cualquier visitante puede leer el catálogo, pero solo un usuario autenticado puede escribir. Costos, ventas, deudores y proveedores son completamente privados — **los costos nunca se guardan en la colección pública**. Por eso es importante desactivar el registro de cuentas (paso 1).
 
 3. **Importar el catálogo**: entra a `admin.html`, inicia sesión y pulsa **“Importar catálogo local (260 perfumes)”** en la sección Productos. Después asigna costos y stock.
 

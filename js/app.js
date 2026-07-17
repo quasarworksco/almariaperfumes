@@ -18,16 +18,16 @@
   // Casas con acceso rápido vía chips (las de mayor inventario)
   const CHIP_COUNT = 10;
 
-  // Paleta de degradados para el visual de cada tarjeta
+  // Paleta de degradados en tonos vino para el visual de cada tarjeta
   const GRADIENTS = [
-    ["#b08d46", "#e2c98f"],
-    ["#5d6b5a", "#a8b5a0"],
-    ["#7a5c6e", "#c9a6bb"],
-    ["#4a5d7a", "#9db3cc"],
-    ["#8a6a4f", "#d4b89a"],
-    ["#5f5a72", "#aaa4c4"],
-    ["#6e7a5c", "#bcc9a2"],
-    ["#7a4f4f", "#cc9d9d"],
+    ["#722f37", "#a4626c"],
+    ["#46161e", "#8c4a55"],
+    ["#8a3a45", "#c9909a"],
+    ["#5a2630", "#9c6b78"],
+    ["#93404b", "#d0a0a8"],
+    ["#3c1a21", "#7a4a52"],
+    ["#6b3540", "#b07884"],
+    ["#7e2d3a", "#bd8890"],
   ];
 
   // ─── Referencias al DOM ────────────────────────────────────

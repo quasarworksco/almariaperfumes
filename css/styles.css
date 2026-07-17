@@ -4,14 +4,15 @@
    ═══════════════════════════════════════════════════ */
 
 :root {
-  --bg: #faf8f5;
+  --bg: #ffffff;
   --surface: #ffffff;
-  --ink: #1c1a17;
-  --ink-soft: #6b655c;
-  --ink-faint: #a39c90;
-  --gold: #b08d46;
-  --gold-soft: #d9c294;
-  --line: #e8e2d8;
+  --ink: #241a1c;
+  --ink-soft: #6d6062;
+  --ink-faint: #a69598;
+  --vino: #722f37;
+  --vino-claro: #c9909a;
+  --vino-oscuro: #46161e;
+  --line: #ecdfe1;
   --shadow: 0 2px 12px rgba(28, 26, 23, 0.06);
   --shadow-hover: 0 12px 32px rgba(28, 26, 23, 0.12);
   --radius: 14px;
@@ -42,7 +43,7 @@ body {
   position: sticky;
   top: 0;
   z-index: 50;
-  background: rgba(250, 248, 245, 0.92);
+  background: rgba(255, 255, 255, 0.92);
   backdrop-filter: blur(12px);
   border-bottom: 1px solid var(--line);
 }
@@ -68,12 +69,12 @@ body {
   place-items: center;
   width: 40px;
   height: 40px;
-  border: 1px solid var(--gold);
+  border: 1px solid var(--vino);
   border-radius: 50%;
   font-family: var(--font-display);
   font-size: 1.35rem;
   font-weight: 600;
-  color: var(--gold);
+  color: var(--vino);
 }
 
 .brand-text {
@@ -86,7 +87,7 @@ body {
 .brand-text em {
   font-style: italic;
   font-weight: 500;
-  color: var(--gold);
+  color: var(--vino);
 }
 
 /* Toggle Detal / Mayor */
@@ -116,7 +117,7 @@ body {
 }
 
 .price-toggle-btn.is-active {
-  background: var(--ink);
+  background: var(--vino);
   color: #fff;
 }
 
@@ -126,7 +127,7 @@ body {
   text-align: center;
   padding: clamp(3rem, 8vw, 5.5rem) 0 clamp(2.5rem, 6vw, 4rem);
   background:
-    radial-gradient(ellipse 60% 80% at 50% -20%, rgba(176, 141, 70, 0.12), transparent),
+    radial-gradient(ellipse 60% 80% at 50% -20%, rgba(114, 47, 55, 0.10), transparent),
     var(--bg);
 }
 
@@ -135,7 +136,7 @@ body {
   font-weight: 500;
   letter-spacing: 0.35em;
   text-transform: uppercase;
-  color: var(--gold);
+  color: var(--vino);
   margin-bottom: 1rem;
 }
 
@@ -149,7 +150,7 @@ body {
 
 .hero-title em {
   font-style: italic;
-  color: var(--gold);
+  color: var(--vino);
 }
 
 .hero-subtitle {
@@ -197,8 +198,8 @@ body {
 
 .search-input:focus {
   outline: none;
-  border-color: var(--gold);
-  box-shadow: 0 0 0 4px rgba(176, 141, 70, 0.12);
+  border-color: var(--vino);
+  box-shadow: 0 0 0 4px rgba(114, 47, 55, 0.10);
 }
 
 .search-input::-webkit-search-cancel-button { display: none; }
@@ -220,7 +221,7 @@ body {
   transition: background 0.2s ease;
 }
 
-.search-clear:hover { background: var(--gold-soft); color: var(--ink); }
+.search-clear:hover { background: var(--vino-claro); color: var(--ink); }
 
 /* ══════════ TOOLBAR / FILTROS ══════════ */
 
@@ -281,7 +282,7 @@ body {
 
 .filter-select:focus {
   outline: none;
-  border-color: var(--gold);
+  border-color: var(--vino);
 }
 
 .results-count {
@@ -320,11 +321,11 @@ body {
   white-space: nowrap;
 }
 
-.chip:hover { border-color: var(--gold); color: var(--ink); }
+.chip:hover { border-color: var(--vino); color: var(--ink); }
 
 .chip.is-active {
-  background: var(--ink);
-  border-color: var(--ink);
+  background: var(--vino);
+  border-color: var(--vino);
   color: #fff;
 }
 
@@ -404,7 +405,7 @@ body {
 .badge-oferta {
   left: auto;
   right: 0.75rem;
-  background: var(--gold);
+  background: var(--vino);
   color: #fff;
 }
 
@@ -442,7 +443,7 @@ body {
   font-weight: 600;
   letter-spacing: 0.2em;
   text-transform: uppercase;
-  color: var(--gold);
+  color: var(--vino);
   margin-bottom: 0.25rem;
 }
 
@@ -523,7 +524,7 @@ body {
   letter-spacing: 0.1em;
   text-transform: uppercase;
   color: #fff;
-  background: var(--ink);
+  background: var(--vino);
   border: none;
   border-radius: 999px;
   padding: 0.8rem 2rem;
@@ -531,12 +532,12 @@ body {
   transition: background 0.25s ease;
 }
 
-.btn-reset:hover { background: var(--gold); }
+.btn-reset:hover { background: var(--vino-oscuro); }
 
 /* ══════════ FOOTER ══════════ */
 
 .site-footer {
-  background: var(--ink);
+  background: var(--vino-oscuro);
   color: rgba(255, 255, 255, 0.75);
   padding: 3rem 0;
   text-align: center;
@@ -550,7 +551,7 @@ body {
   margin-bottom: 0.4rem;
 }
 
-.footer-brand em { font-style: italic; color: var(--gold-soft); }
+.footer-brand em { font-style: italic; color: var(--vino-claro); }
 
 .footer-note {
   font-size: 0.85rem;
