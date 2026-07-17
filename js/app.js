@@ -13,7 +13,22 @@
     casa: "",
     orden: "casa",
     modoPrecio: "detal", // "detal" | "mayor"
+    carrito: cargarCarrito(), // [{ id, cantidad }]
   };
+
+  const CART_KEY = "almaria_carrito";
+
+  function cargarCarrito() {
+    try {
+      return JSON.parse(localStorage.getItem("almaria_carrito")) || [];
+    } catch {
+      return [];
+    }
+  }
+
+  function guardarCarrito() {
+    localStorage.setItem(CART_KEY, JSON.stringify(state.carrito));
+  }
 
   // Casas con acceso rápido vía chips (las de mayor inventario)
   const CHIP_COUNT = 10;
@@ -41,6 +56,19 @@
   const $empty = document.getElementById("empty-state");
   const $reset = document.getElementById("reset-filters");
   const $toggleBtns = document.querySelectorAll(".price-toggle-btn");
+
+  // Destacados y carrito
+  const $featuredSection = document.getElementById("featured-section");
+  const $featuredTrack = document.getElementById("featured-track");
+  const $cartFab = document.getElementById("cart-fab");
+  const $cartCount = document.getElementById("cart-count");
+  const $cartOverlay = document.getElementById("cart-overlay");
+  const $cartDrawer = document.getElementById("cart-drawer");
+  const $cartClose = document.getElementById("cart-close");
+  const $cartItems = document.getElementById("cart-items");
+  const $cartEmpty = document.getElementById("cart-empty");
+  const $cartFoot = document.getElementById("cart-foot");
+  const $cartTotal = document.getElementById("cart-total");
 
   // ─── Utilidades ────────────────────────────────────────────
   const normalizar = (texto) =>
@@ -113,46 +141,60 @@
   }
 
   // ─── Renderizado ───────────────────────────────────────────
+  function tarjetaHTML(p, i, opts = {}) {
+    const esMayor = state.modoPrecio === "mayor";
+    const imagen = p.imagen
+      ? `<img src="${escapeHTML(p.imagen)}" alt="${escapeHTML(p.nombre)}" loading="lazy" />`
+      : `<span class="card-monogram">${escapeHTML(p.nombre.charAt(0))}</span>`;
+
+    const oferta = enOferta(p);
+    const sinStock = agotado(p);
+    const enCarrito = state.carrito.some((it) => it.id === p.id);
+
+    return `
+      <article class="product-card ${sinStock ? "is-agotado" : ""} ${opts.featured ? "is-featured" : ""}"
+        style="animation-delay:${Math.min(i * 25, 400)}ms">
+        <div class="card-visual" style="background:${gradientePara(p.casa)}">
+          ${imagen}
+          ${p.destacado && !opts.featured ? '<span class="card-badge badge-destacado">Destacado</span>' : ""}
+          ${oferta ? '<span class="card-badge badge-oferta">Oferta</span>' : ""}
+          ${sinStock ? '<span class="agotado-overlay">Agotado</span>' : ""}
+        </div>
+        <div class="card-body">
+          <p class="card-brand">${escapeHTML(p.casa)}</p>
+          <h3 class="card-name">${escapeHTML(p.nombre)}</h3>
+          <div class="card-footer">
+            <div>
+              <span class="card-price-label">Precio ${esMayor ? "al mayor" : "al detal"}</span>
+              <span class="card-price">${formatearPrecio(precioActivo(p))}
+                ${oferta ? `<s class="price-tachado">${formatearPrecio(p.precioDetal)}</s>` : ""}
+              </span>
+            </div>
+            <span class="card-price-alt">${esMayor ? "Detal" : "Mayor"}: ${formatearPrecio(precioAlterno(p))}</span>
+          </div>
+          <button type="button" class="card-add ${enCarrito ? "is-added" : ""}" data-add="${p.id}" ${sinStock ? "disabled" : ""}>
+            ${sinStock ? "Agotado" : enCarrito ? "Agregado ✓" : "Agregar al pedido"}
+          </button>
+        </div>
+      </article>`;
+  }
+
   function renderProductos() {
     const lista = productosFiltrados();
-    const esMayor = state.modoPrecio === "mayor";
 
     $count.innerHTML = `<strong>${lista.length}</strong> ${
       lista.length === 1 ? "perfume" : "perfumes"
     }`;
     $empty.hidden = lista.length > 0;
 
-    $grid.innerHTML = lista
-      .map((p, i) => {
-        const imagen = p.imagen
-          ? `<img src="${escapeHTML(p.imagen)}" alt="${escapeHTML(p.nombre)}" loading="lazy" />`
-          : `<span class="card-monogram">${escapeHTML(p.nombre.charAt(0))}</span>`;
+    $grid.innerHTML = lista.map((p, i) => tarjetaHTML(p, i)).join("");
+  }
 
-        const oferta = enOferta(p);
-        const sinStock = agotado(p);
-
-        return `
-        <article class="product-card ${sinStock ? "is-agotado" : ""}" style="animation-delay:${Math.min(i * 25, 400)}ms">
-          <div class="card-visual" style="background:${gradientePara(p.casa)}">
-            ${imagen}
-            ${oferta ? '<span class="card-badge badge-oferta">Oferta</span>' : ""}
-            ${sinStock ? '<span class="agotado-overlay">Agotado</span>' : ""}
-          </div>
-          <div class="card-body">
-            <p class="card-brand">${escapeHTML(p.casa)}</p>
-            <h3 class="card-name">${escapeHTML(p.nombre)}</h3>
-            <div class="card-footer">
-              <div>
-                <span class="card-price-label">Precio ${esMayor ? "al mayor" : "al detal"}</span>
-                <span class="card-price">${formatearPrecio(precioActivo(p))}
-                  ${oferta ? `<s class="price-tachado">${formatearPrecio(p.precioDetal)}</s>` : ""}
-                </span>
-              </div>
-              <span class="card-price-alt">${esMayor ? "Detal" : "Mayor"}: ${formatearPrecio(precioAlterno(p))}</span>
-            </div>
-          </div>
-        </article>`;
-      })
+  function renderDestacados() {
+    const destacados = state.productos.filter((p) => p.destacado && !agotado(p));
+    $featuredSection.hidden = destacados.length === 0;
+    $featuredTrack.innerHTML = destacados
+      .map((p, i) => tarjetaHTML(p, i, { featured: true }))
       .join("");
   }
 
@@ -188,10 +230,179 @@
 
   function render() {
     renderFiltros();
+    renderDestacados();
     renderProductos();
+    renderCarrito();
+  }
+
+  // ─── Carrito ───────────────────────────────────────────────
+  const buscarProducto = (id) => state.productos.find((p) => p.id === id);
+
+  function totalCarrito() {
+    return state.carrito.reduce((s, it) => {
+      const p = buscarProducto(it.id);
+      return p ? s + precioActivo(p) * it.cantidad : s;
+    }, 0);
+  }
+
+  function unidadesCarrito() {
+    return state.carrito.reduce((s, it) => s + it.cantidad, 0);
+  }
+
+  function agregarAlCarrito(id) {
+    const existente = state.carrito.find((it) => it.id === id);
+    if (existente) existente.cantidad += 1;
+    else state.carrito.push({ id, cantidad: 1 });
+    guardarCarrito();
+    renderProductos();
+    renderDestacados();
+    renderCarrito();
+  }
+
+  function cambiarCantidad(id, delta) {
+    const it = state.carrito.find((x) => x.id === id);
+    if (!it) return;
+    it.cantidad += delta;
+    if (it.cantidad <= 0) state.carrito = state.carrito.filter((x) => x.id !== id);
+    guardarCarrito();
+    renderProductos();
+    renderDestacados();
+    renderCarrito();
+  }
+
+  function vaciarCarrito() {
+    state.carrito = [];
+    guardarCarrito();
+    renderProductos();
+    renderDestacados();
+    renderCarrito();
+  }
+
+  function renderCarrito() {
+    const unidades = unidadesCarrito();
+    $cartCount.textContent = unidades;
+    $cartCount.hidden = unidades === 0;
+
+    const vacio = state.carrito.length === 0;
+    $cartEmpty.hidden = !vacio;
+    $cartFoot.hidden = vacio;
+
+    $cartItems.innerHTML = state.carrito
+      .map((it) => {
+        const p = buscarProducto(it.id);
+        if (!p) return "";
+        return `
+        <div class="cart-item">
+          <div class="cart-item-info">
+            <p class="cart-item-name">${escapeHTML(p.nombre)}</p>
+            <p class="cart-item-brand">${escapeHTML(p.casa)} · ${formatearPrecio(precioActivo(p))} c/u</p>
+          </div>
+          <div class="cart-item-qty">
+            <button type="button" data-dec="${p.id}" aria-label="Menos">−</button>
+            <span>${it.cantidad}</span>
+            <button type="button" data-inc="${p.id}" aria-label="Más">+</button>
+          </div>
+          <span class="cart-item-sub">${formatearPrecio(precioActivo(p) * it.cantidad)}</span>
+        </div>`;
+      })
+      .join("");
+
+    $cartTotal.textContent = formatearPrecio(totalCarrito());
+  }
+
+  function textoPedido() {
+    const modo = state.modoPrecio === "mayor" ? "AL MAYOR" : "AL DETAL";
+    const lineas = state.carrito.map((it) => {
+      const p = buscarProducto(it.id);
+      if (!p) return "";
+      return `• ${it.cantidad}x ${p.nombre} (${p.casa}) — ${formatearPrecio(precioActivo(p) * it.cantidad)}`;
+    });
+    return (
+      `*Pedido — Almaria Perfumes*\n(Precios ${modo})\n\n` +
+      lineas.join("\n") +
+      `\n\n*Total: ${formatearPrecio(totalCarrito())}*`
+    );
+  }
+
+  function abrirCarrito() {
+    $cartDrawer.hidden = false;
+    $cartOverlay.hidden = false;
+    requestAnimationFrame(() => {
+      $cartDrawer.classList.add("is-open");
+      $cartOverlay.classList.add("is-open");
+    });
+  }
+
+  function cerrarCarrito() {
+    $cartDrawer.classList.remove("is-open");
+    $cartOverlay.classList.remove("is-open");
+    setTimeout(() => {
+      $cartDrawer.hidden = true;
+      $cartOverlay.hidden = true;
+    }, 280);
   }
 
   // ─── Eventos ───────────────────────────────────────────────
+  $grid.addEventListener("click", onAddClick);
+  $featuredTrack.addEventListener("click", onAddClick);
+
+  function onAddClick(e) {
+    const btn = e.target.closest("[data-add]");
+    if (!btn || btn.disabled) return;
+    agregarAlCarrito(btn.dataset.add);
+    // feedback breve
+    btn.classList.add("just-added");
+    setTimeout(() => btn.classList.remove("just-added"), 600);
+  }
+
+  $cartFab.addEventListener("click", abrirCarrito);
+  $cartClose.addEventListener("click", cerrarCarrito);
+  $cartOverlay.addEventListener("click", cerrarCarrito);
+  document.addEventListener("keydown", (e) => {
+    if (e.key === "Escape" && !$cartDrawer.hidden) cerrarCarrito();
+  });
+
+  $cartItems.addEventListener("click", (e) => {
+    const inc = e.target.closest("[data-inc]");
+    const dec = e.target.closest("[data-dec]");
+    if (inc) cambiarCantidad(inc.dataset.inc, 1);
+    else if (dec) cambiarCantidad(dec.dataset.dec, -1);
+  });
+
+  document.getElementById("cart-clear").addEventListener("click", () => {
+    if (state.carrito.length && confirm("¿Vaciar todo el pedido?")) vaciarCarrito();
+  });
+
+  document.getElementById("cart-whatsapp").addEventListener("click", () => {
+    if (!state.carrito.length) return;
+    const url = `https://wa.me/${WHATSAPP_NUMERO}?text=${encodeURIComponent(textoPedido())}`;
+    window.open(url, "_blank");
+  });
+
+  document.getElementById("cart-copy").addEventListener("click", async (e) => {
+    if (!state.carrito.length) return;
+    const btn = e.currentTarget;
+    const original = btn.innerHTML;
+    try {
+      await navigator.clipboard.writeText(textoPedido());
+    } catch {
+      // Respaldo para navegadores sin permiso de portapapeles
+      const ta = document.createElement("textarea");
+      ta.value = textoPedido();
+      document.body.appendChild(ta);
+      ta.select();
+      document.execCommand("copy");
+      ta.remove();
+    }
+    btn.innerHTML = "Lista copiada ✓";
+    btn.classList.add("copied");
+    setTimeout(() => {
+      btn.innerHTML = original;
+      btn.classList.remove("copied");
+    }, 1800);
+  });
+
+
   $search.addEventListener("input", () => {
     state.busqueda = $search.value;
     $searchClear.hidden = !$search.value;
@@ -241,6 +452,8 @@
         b.setAttribute("aria-checked", String(activo));
       });
       renderProductos();
+      renderDestacados();
+      renderCarrito();
     });
   });
 
@@ -283,6 +496,7 @@
           precioOferta: d.precioOferta ? Number(d.precioOferta) : null,
           stock: typeof d.stock === "number" ? d.stock : undefined,
           imagen: d.imagen || null,
+          destacado: !!d.destacado,
         };
       });
       render();

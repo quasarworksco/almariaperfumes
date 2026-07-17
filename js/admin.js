@@ -249,6 +249,7 @@ function renderProductos() {
               ? `<img class="td-foto" src="${esc(p.imagen)}" alt="" loading="lazy" />`
               : `<span class="td-foto td-foto-vacia">${icon("gota")}</span>`}
             <span>${esc(p.nombre)}
+              ${p.destacado ? '<span class="badge destacado">Destacado</span>' : ""}
               ${p.precioOferta ? '<span class="badge oferta">Oferta</span>' : ""}
             </span>
           </span>
@@ -302,6 +303,10 @@ function modalProducto(p = null) {
           <input name="stock" type="number" step="1" min="0" value="${p?.stock ?? 0}" /></label>
         <label class="field"><span>Proveedor</span>
           <select name="proveedorId"><option value="">— Ninguno —</option>${provOpts}</select></label>
+        <label class="field full check-field">
+          <input type="checkbox" name="destacado" ${p?.destacado ? "checked" : ""} />
+          <span>Producto destacado <span class="hint">(aparece resaltado en la tienda)</span></span>
+        </label>
         <label class="field full"><span>Foto del perfume</span>
           <div class="img-upload">
             <div class="img-preview-box">
@@ -312,9 +317,12 @@ function modalProducto(p = null) {
               <input type="file" id="img-file" accept="image/*" hidden />
               <button type="button" class="btn btn-ghost" id="img-subir">${icon("camara")} ${p?.imagen ? "Cambiar foto" : "Subir foto"}</button>
               <button type="button" class="btn btn-danger" id="img-quitar" ${p?.imagen ? "" : "hidden"}>Quitar</button>
-              <p class="hint" id="img-status">JPG o PNG · se sube a Cloudinary y se muestra en la tienda</p>
+              <p class="hint" id="img-status">Sube una foto (JPG/PNG) o pega un enlace de imagen</p>
             </div>
-            <input type="hidden" name="imagen" id="img-url" value="${esc(p?.imagen || "")}" />
+          </div>
+          <div class="img-link-row">
+            <input type="url" name="imagen" id="img-url" placeholder="https://… enlace de la imagen"
+              value="${esc(p?.imagen || "")}" />
           </div>
         </label>
       </div>
@@ -340,17 +348,28 @@ function modalProducto(p = null) {
 
   function mostrarFoto(url) {
     $urlInput.value = url || "";
+    actualizarPreview(url);
+    $subir.innerHTML = icon("camara") + (url ? " Cambiar foto" : " Subir foto");
+  }
+
+  function actualizarPreview(url) {
     $preview.src = url || "";
     $preview.hidden = !url;
     $placeholder.hidden = !!url;
     $quitar.hidden = !url;
-    $subir.innerHTML = icon("camara") + (url ? " Cambiar foto" : " Subir foto");
   }
 
   $subir.addEventListener("click", () => $file.click());
   $quitar.addEventListener("click", () => {
     mostrarFoto("");
     $status.textContent = "Foto quitada. Guarda para aplicar el cambio.";
+  });
+
+  // Pegar/escribir un enlace de imagen actualiza la vista previa
+  $urlInput.addEventListener("input", () => {
+    const url = $urlInput.value.trim();
+    actualizarPreview(url);
+    $subir.innerHTML = icon("camara") + (url ? " Cambiar foto" : " Subir foto");
   });
 
   $file.addEventListener("change", async () => {
@@ -390,6 +409,7 @@ function modalProducto(p = null) {
       precioOferta: f.get("precioOferta") ? Number(f.get("precioOferta")) : null,
       stock: Number(f.get("stock")) || 0,
       imagen: f.get("imagen").trim() || null,
+      destacado: f.get("destacado") === "on",
     };
     const privado = {
       costo: Number(f.get("costo")) || 0,

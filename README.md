@@ -15,6 +15,8 @@ Sitio web de comercio electrónico para venta de perfumes, con catálogo de 260 
 - **Precios al mayor y al detal** con selector en el encabezado; la tarjeta muestra el precio activo y el alterno.
 - **Ordenamiento** por casa, nombre o precio.
 - Tarjetas de producto con casa, nombre y precio en cuadrícula adaptable.
+- **Sección de destacados** (carrusel) con los productos marcados como destacados en el admin.
+- **Carrito de pedido**: el cliente agrega perfumes, ajusta cantidades y luego puede **copiar la lista** o **enviar el pedido por WhatsApp** al número configurado en `WHATSAPP_NUMERO` (`js/firebase-config.js`). El carrito se guarda en el navegador (localStorage).
 
 ## Cómo ejecutarlo
 

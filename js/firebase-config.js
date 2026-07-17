@@ -31,3 +31,9 @@ const CLOUDINARY_CONFIG = {
   cloudName: "do4fpfwlb",
   uploadPreset: "almaria",
 };
+
+/**
+ * Número de WhatsApp (formato internacional, solo dígitos) al que se
+ * envían los pedidos que arma el cliente desde el carrito de la tienda.
+ */
+const WHATSAPP_NUMERO = "584146039842";
