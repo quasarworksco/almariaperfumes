@@ -27,13 +27,32 @@ python3 -m http.server 8000
 
 ## Conectar Firestore
 
-1. Crea un proyecto en [Firebase Console](https://console.firebase.google.com) y habilita **Cloud Firestore**.
-2. Copia la configuración web del proyecto en `js/firebase-config.js`, reemplazando `const FIREBASE_CONFIG = null;`.
-3. Recarga el sitio y ejecuta `seedFirestore()` en la consola del navegador para subir el catálogo local a la colección `perfumes` (solo la primera vez).
-4. A partir de ahí el catálogo se carga desde Firestore. Cada documento admite los campos:
+La configuración del proyecto `almariaperfumes` ya está en `js/firebase-config.js`. Para que el sitio pueda leer el catálogo:
+
+1. En [Firebase Console](https://console.firebase.google.com/project/almariaperfumes/firestore/rules) → **Firestore Database → Reglas**, publica:
+
+   ```
+   rules_version = '2';
+   service cloud.firestore {
+     match /databases/{database}/documents {
+       match /perfumes/{doc} {
+         allow read: if true;
+         allow write: if false;
+       }
+     }
+   }
+   ```
+
+   Esto permite que cualquier visitante lea el catálogo pero nadie pueda modificarlo.
+
+2. **Carga inicial del catálogo** (solo una vez): cambia temporalmente `allow write: if false;` por `allow write: if true;`, abre el sitio, ejecuta `seedFirestore()` en la consola del navegador (F12) y espera el mensaje de confirmación (260 perfumes). Luego vuelve a poner `allow write: if false;` y publica.
+
+3. A partir de ahí el catálogo se administra desde Firestore. Cada documento de la colección `perfumes` admite:
    - `casa` (string), `nombre` (string)
    - `precioMayor` (number), `precioDetal` (number, opcional — por defecto `precioMayor + 5`)
    - `imagen` (string URL, opcional — sustituye el monograma de la tarjeta)
+
+Si Firestore no responde o la colección está vacía, el sitio usa automáticamente los datos locales de `js/data.js`.
 
 ## Precios al detal
 
