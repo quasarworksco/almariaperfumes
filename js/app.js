@@ -52,11 +52,19 @@
   const formatearPrecio = (valor) =>
     `$${Number(valor) % 1 === 0 ? valor : Number(valor).toFixed(2)}`;
 
+  // En modo detal, el precio de oferta (si existe) sustituye al detal
+  const enOferta = (p) =>
+    state.modoPrecio === "detal" && p.precioOferta > 0 && p.precioOferta < p.precioDetal;
+
   const precioActivo = (p) =>
-    state.modoPrecio === "mayor" ? p.precioMayor : p.precioDetal;
+    state.modoPrecio === "mayor"
+      ? p.precioMayor
+      : enOferta(p) ? p.precioOferta : p.precioDetal;
 
   const precioAlterno = (p) =>
     state.modoPrecio === "mayor" ? p.precioDetal : p.precioMayor;
+
+  const agotado = (p) => typeof p.stock === "number" && p.stock <= 0;
 
   // Degradado estable por casa (misma casa → mismo color)
   function gradientePara(casa) {
@@ -120,11 +128,16 @@
           ? `<img src="${escapeHTML(p.imagen)}" alt="${escapeHTML(p.nombre)}" loading="lazy" />`
           : `<span class="card-monogram">${escapeHTML(p.nombre.charAt(0))}</span>`;
 
+        const oferta = enOferta(p);
+        const sinStock = agotado(p);
+
         return `
-        <article class="product-card" style="animation-delay:${Math.min(i * 25, 400)}ms">
+        <article class="product-card ${sinStock ? "is-agotado" : ""}" style="animation-delay:${Math.min(i * 25, 400)}ms">
           <div class="card-visual" style="background:${gradientePara(p.casa)}">
             ${imagen}
             <span class="card-badge">${esMayor ? "Mayor" : "Detal"}</span>
+            ${oferta ? '<span class="card-badge badge-oferta">Oferta</span>' : ""}
+            ${sinStock ? '<span class="agotado-overlay">Agotado</span>' : ""}
           </div>
           <div class="card-body">
             <p class="card-brand">${escapeHTML(p.casa)}</p>
@@ -132,7 +145,9 @@
             <div class="card-footer">
               <div>
                 <span class="card-price-label">Precio ${esMayor ? "al mayor" : "al detal"}</span>
-                <span class="card-price">${formatearPrecio(precioActivo(p))}</span>
+                <span class="card-price">${formatearPrecio(precioActivo(p))}
+                  ${oferta ? `<s class="price-tachado">${formatearPrecio(p.precioDetal)}</s>` : ""}
+                </span>
               </div>
               <span class="card-price-alt">${esMayor ? "Detal" : "Mayor"}: ${formatearPrecio(precioAlterno(p))}</span>
             </div>
@@ -266,6 +281,8 @@
           nombre: d.nombre,
           precioMayor: Number(d.precioMayor),
           precioDetal: Number(d.precioDetal ?? Number(d.precioMayor) + DETAL_MARKUP),
+          precioOferta: d.precioOferta ? Number(d.precioOferta) : null,
+          stock: typeof d.stock === "number" ? d.stock : undefined,
           imagen: d.imagen || null,
         };
       });

@@ -25,34 +25,57 @@ python3 -m http.server 8000
 # → http://localhost:8000
 ```
 
-## Conectar Firestore
+## Panel de administración (`admin.html`)
 
-La configuración del proyecto `almariaperfumes` ya está en `js/firebase-config.js`. Para que el sitio pueda leer el catálogo:
+Panel protegido con Firebase Authentication desde el que se gestiona todo el negocio:
 
-1. En [Firebase Console](https://console.firebase.google.com/project/almariaperfumes/firestore/rules) → **Firestore Database → Reglas**, publica:
+- **Resumen**: productos, unidades y valor del inventario (a costo), ventas y ganancia estimada del mes, total por cobrar, últimas ventas y alertas de stock bajo.
+- **Productos**: crear, editar y eliminar; por producto se maneja **mi costo** (privado), **precio al mayor**, **precio al detal**, **precio de oferta** (opcional, se muestra en la tienda), **stock**, proveedor e imagen. Incluye **carga/descarga de inventario** (entradas y salidas con motivo) y bitácora de movimientos. Botón para importar el catálogo local completo (260 perfumes) la primera vez.
+- **Ventas**: registro con carrito (varios productos, cantidad y precio editables, tipo mayor/detal), monto pagado y notas. Descuenta stock automáticamente; eliminar una venta lo restaura.
+- **Deudores**: si el pago es menor al total, la diferencia queda como deuda; vista agrupada por cliente con registro de abonos.
+- **Proveedores**: registro, edición y eliminación, asociables a productos.
+
+### Configuración inicial (una sola vez)
+
+1. **Habilitar el acceso**: en [Firebase Console → Authentication](https://console.firebase.google.com/project/almariaperfumes/authentication/providers), habilita el proveedor **Correo electrónico/contraseña** y en la pestaña *Users* crea tu usuario administrador.
+
+2. **Publicar reglas de Firestore** en [Firestore → Reglas](https://console.firebase.google.com/project/almariaperfumes/firestore/rules) (cambia el correo por el de tu usuario admin):
 
    ```
    rules_version = '2';
    service cloud.firestore {
      match /databases/{database}/documents {
-       match /perfumes/{doc} {
-         allow read: if true;
-         allow write: if false;
+       function esAdmin() {
+         return request.auth != null
+           && request.auth.token.email == "kevinbermudez1412@gmail.com";
        }
+       match /perfumes/{id} {
+         allow read: if true;        // catálogo público
+         allow write: if esAdmin();
+       }
+       match /costos/{id}      { allow read, write: if esAdmin(); }
+       match /ventas/{id}      { allow read, write: if esAdmin(); }
+       match /proveedores/{id} { allow read, write: if esAdmin(); }
+       match /movimientos/{id} { allow read, write: if esAdmin(); }
      }
    }
    ```
 
-   Esto permite que cualquier visitante lea el catálogo pero nadie pueda modificarlo.
+   Cualquier visitante puede leer el catálogo, pero solo tu usuario puede escribir. Costos, ventas, deudores y proveedores son completamente privados — **los costos nunca se guardan en la colección pública**.
 
-2. **Carga inicial del catálogo** (solo una vez): cambia temporalmente `allow write: if false;` por `allow write: if true;`, abre el sitio, ejecuta `seedFirestore()` en la consola del navegador (F12) y espera el mensaje de confirmación (260 perfumes). Luego vuelve a poner `allow write: if false;` y publica.
+3. **Importar el catálogo**: entra a `admin.html`, inicia sesión y pulsa **“Importar catálogo local (260 perfumes)”** en la sección Productos. Después asigna costos y stock.
 
-3. A partir de ahí el catálogo se administra desde Firestore. Cada documento de la colección `perfumes` admite:
-   - `casa` (string), `nombre` (string)
-   - `precioMayor` (number), `precioDetal` (number, opcional — por defecto `precioMayor + 5`)
-   - `imagen` (string URL, opcional — sustituye el monograma de la tarjeta)
+### Colecciones en Firestore
 
-Si Firestore no responde o la colección está vacía, el sitio usa automáticamente los datos locales de `js/data.js`.
+| Colección | Contenido | Acceso |
+|---|---|---|
+| `perfumes` | casa, nombre, precioMayor, precioDetal, precioOferta, stock, imagen | lectura pública |
+| `costos` | costo (mi costo), proveedorId — por producto | solo admin |
+| `ventas` | fecha, cliente, items, total, pagado, abonos, notas | solo admin |
+| `proveedores` | nombre, teléfono, correo, notas | solo admin |
+| `movimientos` | bitácora de entradas/salidas de inventario | solo admin |
+
+Si Firestore no responde o la colección está vacía, la tienda pública usa automáticamente los datos locales de `js/data.js`.
 
 ## Precios al detal
 
@@ -61,9 +84,12 @@ Los precios al detal se calculan por defecto como **precio al mayor + $5** (cons
 ## Estructura
 
 ```
-index.html            Página principal
-css/styles.css        Estilos (diseño responsive)
+index.html            Tienda pública
+admin.html            Panel de administración (requiere login)
+css/styles.css        Estilos de la tienda
+css/admin.css         Estilos del panel admin
 js/data.js            Catálogo local (fallback)
-js/firebase-config.js Configuración de Firebase (placeholder)
-js/app.js             Lógica: búsqueda, filtros, render, Firestore
+js/firebase-config.js Configuración de Firebase
+js/app.js             Tienda: búsqueda, filtros, render, Firestore
+js/admin.js           Admin: auth, productos, ventas, deudores, proveedores
 ```

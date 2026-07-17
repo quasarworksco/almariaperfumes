@@ -401,6 +401,35 @@ body {
   padding: 0.28rem 0.7rem;
 }
 
+.badge-oferta {
+  left: auto;
+  right: 0.75rem;
+  background: var(--gold);
+  color: #fff;
+}
+
+.agotado-overlay {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  background: rgba(28, 26, 23, 0.55);
+  color: #fff;
+  font-size: 0.8rem;
+  font-weight: 600;
+  letter-spacing: 0.3em;
+  text-transform: uppercase;
+}
+
+.product-card.is-agotado .card-body { opacity: 0.55; }
+
+.price-tachado {
+  font-size: 0.85rem;
+  font-weight: 400;
+  color: var(--ink-faint);
+  margin-left: 0.3rem;
+}
+
 .card-body {
   display: flex;
   flex-direction: column;
