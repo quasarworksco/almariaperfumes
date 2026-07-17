@@ -19,6 +19,7 @@ const S = {
   productos: [], // perfumes + costo/proveedorId fusionados
   ventas: [],
   proveedores: [],
+  clientes: [], // { id, nombre, telefono }
   movimientos: [],
   prodBusqueda: "",
   carrito: [], // items de la venta en curso
@@ -136,11 +137,12 @@ async function initFirebase() {
 // ─── Carga de datos ──────────────────────────────────────────
 async function cargarTodo() {
   const { fs, db } = S.fb;
-  const [perfumesSnap, costosSnap, ventasSnap, provSnap, movSnap] = await Promise.all([
+  const [perfumesSnap, costosSnap, ventasSnap, provSnap, cliSnap, movSnap] = await Promise.all([
     fs.getDocs(fs.collection(db, "perfumes")),
     fs.getDocs(fs.collection(db, "costos")),
     fs.getDocs(fs.collection(db, "ventas")),
     fs.getDocs(fs.collection(db, "proveedores")),
+    fs.getDocs(fs.collection(db, "clientes")),
     fs.getDocs(fs.query(fs.collection(db, "movimientos"), fs.orderBy("fecha", "desc"), fs.limit(30))),
   ]);
 
@@ -161,6 +163,10 @@ async function cargarTodo() {
     .sort((a, b) => (b.fecha || "").localeCompare(a.fecha || ""));
 
   S.proveedores = provSnap.docs
+    .map((d) => ({ id: d.id, ...d.data() }))
+    .sort((a, b) => (a.nombre || "").localeCompare(b.nombre || "", "es"));
+
+  S.clientes = cliSnap.docs
     .map((d) => ({ id: d.id, ...d.data() }))
     .sort((a, b) => (a.nombre || "").localeCompare(b.nombre || "", "es"));
 
@@ -567,14 +573,18 @@ function renderVentas() {
       const resumen = (v.items || [])
         .map((it) => `${it.cantidad}× ${it.nombre}`)
         .join(", ");
+      const estado = v.credito
+        ? saldo > 0 ? '<span class="badge pendiente">Crédito</span>' : '<span class="badge pagada">Crédito · Pagada</span>'
+        : `<span class="badge ${saldo > 0 ? "pendiente" : "pagada"}">${saldo > 0 ? "Pendiente" : "Pagada"}</span>`;
       return `<tr data-id="${v.id}">
         <td class="muted" style="white-space:nowrap">${fmtFecha(v.fecha)}</td>
-        <td class="td-nombre">${esc(v.cliente || "Cliente")}</td>
+        <td class="td-nombre">${esc(v.cliente || "Cliente")}
+          ${v.telefono ? `<span class="td-sub">${esc(v.telefono)}</span>` : ""}</td>
         <td>${esc(resumen)}<span class="td-sub">${(v.items || []).reduce((s, it) => s + it.cantidad, 0)} unidades</span></td>
         <td class="num">${fmt(v.total)}</td>
         <td class="num">${fmt(v.pagado)}</td>
         <td class="num ${saldo > 0 ? "" : "muted"}">${fmt(saldo)}</td>
-        <td><span class="badge ${saldo > 0 ? "pendiente" : "pagada"}">${saldo > 0 ? "Pendiente" : "Pagada"}</span></td>
+        <td>${estado}</td>
         <td class="acciones">
           ${saldo > 0 ? `<button class="btn-icon" data-accion="abonar" title="Registrar abono">${icon("dolar")}</button>` : ""}
           <button class="btn-icon danger" data-accion="eliminar" title="Eliminar venta">${icon("basura")}</button>
@@ -591,30 +601,37 @@ function modalVenta() {
     <form id="form-venta">
       <div class="form-grid">
         <label class="field"><span>Cliente</span>
-          <input name="cliente" required placeholder="Nombre del cliente" list="clientes-list" /></label>
+          <input name="cliente" id="venta-cliente" required placeholder="Nombre del cliente" list="clientes-list" autocomplete="off" /></label>
+        <label class="field"><span>Teléfono</span>
+          <input name="telefono" id="venta-telefono" type="tel" placeholder="Ej. 0414 6039842" autocomplete="off" /></label>
         <label class="field"><span>Tipo de precio</span>
           <select name="tipoPrecio" id="venta-tipo">
             <option value="detal">Al detal</option>
             <option value="mayor">Al mayor</option>
+          </select></label>
+        <label class="field"><span>Tipo de pago</span>
+          <select name="tipoPago" id="venta-pago">
+            <option value="contado">Contado (pagado)</option>
+            <option value="credito">Crédito (a deber)</option>
           </select></label>
         <label class="field full"><span>Producto</span>
           <input id="venta-buscar" placeholder="Escribe para buscar… (Enter agrega)" autocomplete="off" list="venta-productos" /></label>
       </div>
       <datalist id="venta-productos"></datalist>
       <datalist id="clientes-list">
-        ${[...new Set(S.ventas.map((v) => v.cliente).filter(Boolean))].map((c) => `<option value="${esc(c)}">`).join("")}
+        ${S.clientes.map((c) => `<option value="${esc(c.nombre)}">`).join("")}
       </datalist>
 
       <div class="cart-list" id="venta-carrito"><p class="muted">Agrega productos con el buscador.</p></div>
       <div class="cart-total"><span>Total</span><strong id="venta-total">$0</strong></div>
 
       <div class="form-grid" style="margin-top:0.6rem">
-        <label class="field"><span>Monto pagado ahora</span>
+        <label class="field" id="abono-field" hidden><span>Abono inicial <span class="hint">(cuánto paga ahora)</span></span>
           <input name="pagado" type="number" step="0.01" min="0" value="0" id="venta-pagado" /></label>
-        <label class="field"><span>Notas (opcional)</span>
+        <label class="field full"><span>Notas (opcional)</span>
           <input name="notas" placeholder="Método de pago, referencia…" /></label>
       </div>
-      <p class="hint">Si el monto pagado es menor al total, la diferencia queda registrada como deuda del cliente.</p>
+      <p class="hint" id="venta-hint">Venta de contado: se marca como pagada por el total.</p>
 
       <div class="modal-actions">
         <button type="button" class="btn btn-ghost" data-cerrar>Cancelar</button>
@@ -700,6 +717,22 @@ function modalVenta() {
     renderCarrito();
   });
 
+  // Contado / Crédito: muestra u oculta el abono inicial
+  $("#venta-pago").addEventListener("change", () => {
+    const credito = $("#venta-pago").value === "credito";
+    $("#abono-field").hidden = !credito;
+    $("#venta-hint").textContent = credito
+      ? "Venta a crédito: el saldo pendiente pasa al panel de Deudores."
+      : "Venta de contado: se marca como pagada por el total.";
+  });
+
+  // Autocompleta el teléfono cuando se elige un cliente ya registrado
+  $("#venta-cliente").addEventListener("input", () => {
+    const nombre = $("#venta-cliente").value.trim().toLowerCase();
+    const cli = S.clientes.find((c) => c.nombre.toLowerCase() === nombre);
+    if (cli && cli.telefono) $("#venta-telefono").value = cli.telefono;
+  });
+
   $("#venta-carrito").addEventListener("input", (e) => {
     const i = Number(e.target.dataset.i);
     if (Number.isNaN(i) || !S.carrito[i]) return;
@@ -723,11 +756,25 @@ function modalVenta() {
     if (!S.carrito.length) { toast("Agrega al menos un producto.", "error"); return; }
     const f = new FormData(e.target);
     const total = totalCarrito();
-    const pagado = Math.min(Number(f.get("pagado")) || 0, total);
+    const credito = f.get("tipoPago") === "credito";
+    const cliente = f.get("cliente").trim();
+    const telefono = f.get("telefono").trim();
+
+    // Contado: pagado = total. Crédito: pagado = abono inicial (puede ser 0).
+    const pagado = credito
+      ? Math.min(Number(f.get("pagado")) || 0, total)
+      : total;
+
+    if (credito && !telefono &&
+        !confirm("Venta a crédito sin teléfono del cliente. ¿Continuar de todas formas?")) {
+      return;
+    }
 
     const venta = {
       fecha: hoyISO(),
-      cliente: f.get("cliente").trim(),
+      cliente,
+      telefono,
+      credito,
       items: S.carrito.map(({ stockMax, ...it }) => it),
       total,
       pagado,
@@ -743,14 +790,35 @@ function modalVenta() {
         const p = S.productos.find((x) => x.id === it.productId);
         if (p) await ajustarStock(p, -it.cantidad, `venta a ${venta.cliente}`);
       }
+      await registrarCliente(cliente, telefono);
       S.ventas.unshift({ id: ref.id, ...venta });
       cerrarModal();
       renderTodo();
-      toast(`Venta de ${fmt(total)} registrada ✓`, "success");
+      toast(
+        credito
+          ? `Venta a crédito registrada · saldo ${fmt(total - pagado)} en Deudores`
+          : `Venta de ${fmt(total)} registrada ✓`,
+        "success"
+      );
     } catch (err) {
       toast("Error al guardar la venta: " + err.message, "error");
     }
   });
+}
+
+/**
+ * Registra o actualiza un cliente en la colección "clientes"
+ * (identificado por su nombre normalizado). Guarda el teléfono más reciente.
+ */
+async function registrarCliente(nombre, telefono) {
+  if (!nombre) return;
+  const { fs, db } = S.fb;
+  const id = "c_" + normalizar(nombre).replace(/[^a-z0-9]+/g, "_").replace(/^_|_$/g, "");
+  const datos = { nombre, telefono: telefono || "", actualizado: hoyISO() };
+  await fs.setDoc(fs.doc(db, "clientes", id), datos, { merge: true });
+  const existente = S.clientes.find((c) => c.id === id);
+  if (existente) Object.assign(existente, datos);
+  else S.clientes.push({ id, ...datos });
 }
 
 function modalAbono(v) {
@@ -806,17 +874,38 @@ async function eliminarVenta(v) {
 }
 
 // ═════════════════════ DEUDORES ══════════════════════════════
+function telefonoCliente(nombre) {
+  const cli = S.clientes.find(
+    (c) => normalizar(c.nombre) === normalizar(nombre || "")
+  );
+  return cli?.telefono || "";
+}
+
 function clientesDeudores() {
   const mapa = {};
   S.ventas.forEach((v) => {
     const saldo = saldoVenta(v);
     if (saldo <= 0) return;
     const clave = v.cliente || "Cliente";
-    (mapa[clave] ??= { cliente: clave, total: 0, ventas: [] });
+    (mapa[clave] ??= { cliente: clave, telefono: "", total: 0, ventas: [] });
     mapa[clave].total += saldo;
+    if (v.telefono) mapa[clave].telefono = v.telefono;
     mapa[clave].ventas.push(v);
   });
+  // Completa el teléfono desde el registro de clientes si falta
+  Object.values(mapa).forEach((d) => {
+    if (!d.telefono) d.telefono = telefonoCliente(d.cliente);
+  });
   return Object.values(mapa).sort((a, b) => b.total - a.total);
+}
+
+/** Convierte un teléfono venezolano a formato internacional para wa.me */
+function telefonoWa(tel) {
+  let n = (tel || "").replace(/\D/g, "");
+  if (!n) return "";
+  if (n.startsWith("58")) return n;
+  if (n.startsWith("0")) n = n.slice(1);
+  return "58" + n;
 }
 
 function renderDeudores() {
@@ -833,8 +922,16 @@ function renderDeudores() {
     .map(
       (d) => `<div class="deudor-card">
         <div class="deudor-head">
-          <span class="deudor-nombre">${esc(d.cliente)}</span>
-          <span class="deudor-total">Debe ${fmt(d.total)}</span>
+          <div>
+            <span class="deudor-nombre">${esc(d.cliente)}</span>
+            ${d.telefono ? `<span class="deudor-tel">${esc(d.telefono)}</span>` : '<span class="deudor-tel muted">Sin teléfono</span>'}
+          </div>
+          <div class="deudor-head-right">
+            ${d.telefono ? `<a class="btn-wa-mini" href="https://wa.me/${telefonoWa(d.telefono)}?text=${encodeURIComponent(`Hola ${d.cliente}, le recordamos su saldo pendiente de ${fmt(d.total)} con Almaria Perfumes.`)}" target="_blank" title="Recordar por WhatsApp">
+              <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M17.5 14.4c-.3-.15-1.77-.87-2.04-.97-.27-.1-.47-.15-.67.15-.2.3-.77.97-.94 1.17-.17.2-.35.22-.65.07-.3-.15-1.26-.46-2.4-1.48-.89-.79-1.49-1.77-1.66-2.07-.17-.3-.02-.46.13-.61.13-.13.3-.35.45-.52.15-.17.2-.3.3-.5.1-.2.05-.37-.02-.52-.08-.15-.67-1.61-.92-2.21-.24-.58-.49-.5-.67-.51h-.57c-.2 0-.52.07-.79.37-.27.3-1.04 1.02-1.04 2.48s1.07 2.88 1.22 3.08c.15.2 2.1 3.2 5.08 4.49.71.31 1.26.49 1.69.62.71.23 1.36.19 1.87.12.57-.09 1.77-.72 2.02-1.42.25-.7.25-1.3.17-1.42-.07-.13-.27-.2-.57-.35zM12 2a10 10 0 0 0-8.6 15.06L2 22l5.05-1.32A10 10 0 1 0 12 2z"/></svg>
+            </a>` : ""}
+            <span class="deudor-total">Debe ${fmt(d.total)}</span>
+          </div>
         </div>
         <div class="deudor-ventas mini-list">
           ${d.ventas

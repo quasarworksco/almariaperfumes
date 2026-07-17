@@ -65,6 +65,7 @@ El ingreso es con **usuario y contraseña** (usuario `almariaperfumes`). Interna
        match /costos/{id}      { allow read, write: if esAdmin(); }
        match /ventas/{id}      { allow read, write: if esAdmin(); }
        match /proveedores/{id} { allow read, write: if esAdmin(); }
+       match /clientes/{id}    { allow read, write: if esAdmin(); }
        match /movimientos/{id} { allow read, write: if esAdmin(); }
      }
    }
@@ -86,8 +87,9 @@ Configuración en `js/firebase-config.js` (`CLOUDINARY_CONFIG`): `cloudName` y `
 |---|---|---|
 | `perfumes` | casa, nombre, precioMayor, precioDetal, precioOferta, stock, imagen | lectura pública |
 | `costos` | costo (mi costo), proveedorId — por producto | solo admin |
-| `ventas` | fecha, cliente, items, total, pagado, abonos, notas | solo admin |
+| `ventas` | fecha, cliente, telefono, credito, items, total, pagado, abonos, notas | solo admin |
 | `proveedores` | nombre, teléfono, correo, notas | solo admin |
+| `clientes` | nombre, telefono (registro automático al vender) | solo admin |
 | `movimientos` | bitácora de entradas/salidas de inventario | solo admin |
 
 Si Firestore no responde o la colección está vacía, la tienda pública usa automáticamente los datos locales de `js/data.js`.
