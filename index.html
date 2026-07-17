@@ -1,1 +1,122 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="Almaria Perfumes — Catálogo de perfumes originales con precios al mayor y al detal." />
+  <title>Almaria Perfumes · Catálogo</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Ccircle cx='32' cy='32' r='30' fill='none' stroke='%23722f37' stroke-width='3'/%3E%3Ctext x='32' y='44' text-anchor='middle' font-family='Georgia,serif' font-size='36' font-style='italic' fill='%23722f37'%3EA%3C/text%3E%3C/svg%3E" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;0,600;0,700;1,500&family=Jost:wght@300;400;500;600&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="css/styles.css" />
+</head>
+<body>
 
+  <!-- ══════════ HEADER ══════════ -->
+  <header class="site-header" id="top">
+    <div class="header-inner container">
+      <a href="#top" class="brand">
+        <span class="brand-mark">A</span>
+        <span class="brand-text">Almaria<em>Perfumes</em></span>
+      </a>
+
+      <!-- Selector de modo de precio: Detal / Mayor -->
+      <div class="price-toggle" role="radiogroup" aria-label="Modo de precio">
+        <button type="button" class="price-toggle-btn is-active" data-mode="detal" role="radio" aria-checked="true">
+          Al Detal
+        </button>
+        <button type="button" class="price-toggle-btn" data-mode="mayor" role="radio" aria-checked="false">
+          Al Mayor
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- ══════════ HERO ══════════ -->
+  <section class="hero">
+    <div class="container">
+      <p class="hero-kicker">Fragancias originales</p>
+      <h1 class="hero-title">Encuentra tu <em>esencia</em></h1>
+      <p class="hero-subtitle">
+        Catálogo de perfumes de las mejores casas del mundo,
+        con precios al mayor y al detal.
+      </p>
+
+      <!-- Barra de búsqueda -->
+      <div class="search-wrap">
+        <svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true">
+          <circle cx="11" cy="11" r="7"></circle>
+          <line x1="21" y1="21" x2="16.5" y2="16.5"></line>
+        </svg>
+        <input
+          type="search"
+          id="search-input"
+          class="search-input"
+          placeholder="Busca por nombre o casa… ej. Khamrah, Lattafa, Good Girl"
+          autocomplete="off"
+          aria-label="Buscar perfume por nombre o casa"
+        />
+        <button type="button" id="search-clear" class="search-clear" aria-label="Limpiar búsqueda" hidden>&times;</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- ══════════ CATÁLOGO ══════════ -->
+  <main class="catalog container">
+
+    <!-- Filtros -->
+    <div class="toolbar">
+      <div class="filter-group">
+        <label class="filter-label" for="brand-select">Casa / Marca</label>
+        <div class="select-wrap">
+          <select id="brand-select" class="filter-select" aria-label="Filtrar por casa o marca">
+            <option value="">Todas las casas</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="filter-group">
+        <label class="filter-label" for="sort-select">Ordenar por</label>
+        <div class="select-wrap">
+          <select id="sort-select" class="filter-select" aria-label="Ordenar productos">
+            <option value="casa">Casa (A–Z)</option>
+            <option value="nombre">Nombre (A–Z)</option>
+            <option value="precio-asc">Precio: menor a mayor</option>
+            <option value="precio-desc">Precio: mayor a menor</option>
+          </select>
+        </div>
+      </div>
+
+      <p class="results-count" id="results-count" aria-live="polite"></p>
+    </div>
+
+    <!-- Chips de casas destacadas -->
+    <div class="brand-chips" id="brand-chips" aria-label="Casas destacadas"></div>
+
+    <!-- Grid de productos -->
+    <section class="product-grid" id="product-grid" aria-live="polite"></section>
+
+    <!-- Estado vacío -->
+    <div class="empty-state" id="empty-state" hidden>
+      <div class="empty-icon">✕</div>
+      <h2>Sin resultados</h2>
+      <p>No encontramos perfumes que coincidan con tu búsqueda.<br />Intenta con otro nombre o casa.</p>
+      <button type="button" class="btn-reset" id="reset-filters">Limpiar filtros</button>
+    </div>
+  </main>
+
+  <!-- ══════════ FOOTER ══════════ -->
+  <footer class="site-footer">
+    <div class="container footer-inner">
+      <p class="footer-brand">Almaria<em>Perfumes</em></p>
+      <p class="footer-note">Precios en USD · Al mayor y al detal · Fragancias 100% originales</p>
+      <p class="footer-copy">&copy; <span id="year"></span> Almaria Perfumes. Todos los derechos reservados.</p>
+    </div>
+  </footer>
+
+  <script src="js/data.js"></script>
+  <script src="js/firebase-config.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>
