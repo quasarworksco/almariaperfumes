@@ -54,6 +54,31 @@ function toast(msg, tipo = "") {
 
 const saldoVenta = (v) => Math.max(0, (v.total || 0) - (v.pagado || 0));
 
+/**
+ * Sube una imagen a Cloudinary (preset sin firma) y devuelve la URL
+ * optimizada (formato y calidad automáticos, máx. 800px de ancho).
+ */
+async function subirACloudinary(archivo) {
+  if (typeof CLOUDINARY_CONFIG === "undefined" || !CLOUDINARY_CONFIG?.cloudName) {
+    throw new Error("Cloudinary no está configurado en js/firebase-config.js");
+  }
+  const datos = new FormData();
+  datos.append("file", archivo);
+  datos.append("upload_preset", CLOUDINARY_CONFIG.uploadPreset);
+  datos.append("folder", "perfumes");
+
+  const resp = await fetch(
+    `https://api.cloudinary.com/v1_1/${CLOUDINARY_CONFIG.cloudName}/image/upload`,
+    { method: "POST", body: datos }
+  );
+  const json = await resp.json();
+  if (!resp.ok) {
+    throw new Error(json?.error?.message || `HTTP ${resp.status}`);
+  }
+  // Entrega optimizada: f_auto (mejor formato), q_auto (calidad), w_800
+  return json.secure_url.replace("/upload/", "/upload/f_auto,q_auto,w_800/");
+}
+
 // ─── Modal genérico ──────────────────────────────────────────
 function abrirModal(html) {
   $("#modal").innerHTML = html;
@@ -202,8 +227,15 @@ function renderProductos() {
       const pill = stock === 0 ? "out" : stock <= 3 ? "low" : "";
       return `<tr data-id="${p.id}">
         <td class="td-casa">${esc(p.casa)}</td>
-        <td class="td-nombre">${esc(p.nombre)}
-          ${p.precioOferta ? '<span class="badge oferta">Oferta</span>' : ""}
+        <td class="td-nombre">
+          <span class="td-producto">
+            ${p.imagen
+              ? `<img class="td-foto" src="${esc(p.imagen)}" alt="" loading="lazy" />`
+              : '<span class="td-foto td-foto-vacia">🧴</span>'}
+            <span>${esc(p.nombre)}
+              ${p.precioOferta ? '<span class="badge oferta">Oferta</span>' : ""}
+            </span>
+          </span>
         </td>
         <td class="num muted">${fmt(p.costo)}</td>
         <td class="num">${fmt(p.precioMayor)}</td>
@@ -254,8 +286,21 @@ function modalProducto(p = null) {
           <input name="stock" type="number" step="1" min="0" value="${p?.stock ?? 0}" /></label>
         <label class="field"><span>Proveedor</span>
           <select name="proveedorId"><option value="">— Ninguno —</option>${provOpts}</select></label>
-        <label class="field full"><span>Imagen (URL, opcional)</span>
-          <input name="imagen" type="url" value="${esc(p?.imagen || "")}" /></label>
+        <label class="field full"><span>Foto del perfume</span>
+          <div class="img-upload">
+            <div class="img-preview-box">
+              <img id="img-preview" src="${esc(p?.imagen || "")}" alt="" ${p?.imagen ? "" : "hidden"} />
+              <span id="img-placeholder" class="img-placeholder" ${p?.imagen ? "hidden" : ""}>Sin foto</span>
+            </div>
+            <div class="img-upload-controls">
+              <input type="file" id="img-file" accept="image/*" hidden />
+              <button type="button" class="btn btn-ghost" id="img-subir">📷 ${p?.imagen ? "Cambiar foto" : "Subir foto"}</button>
+              <button type="button" class="btn btn-danger" id="img-quitar" ${p?.imagen ? "" : "hidden"}>Quitar</button>
+              <p class="hint" id="img-status">JPG o PNG · se sube a Cloudinary y se muestra en la tienda</p>
+            </div>
+            <input type="hidden" name="imagen" id="img-url" value="${esc(p?.imagen || "")}" />
+          </div>
+        </label>
       </div>
       <datalist id="casas-list">
         ${[...new Set(S.productos.map((x) => x.casa))].map((c) => `<option value="${esc(c)}">`).join("")}
@@ -266,6 +311,54 @@ function modalProducto(p = null) {
       </div>
     </form>
   `);
+
+  // ── Subida de foto a Cloudinary ──
+  const $file = $("#img-file");
+  const $subir = $("#img-subir");
+  const $quitar = $("#img-quitar");
+  const $status = $("#img-status");
+  const $preview = $("#img-preview");
+  const $placeholder = $("#img-placeholder");
+  const $urlInput = $("#img-url");
+  const $guardar = $('#form-producto button[type="submit"]');
+
+  function mostrarFoto(url) {
+    $urlInput.value = url || "";
+    $preview.src = url || "";
+    $preview.hidden = !url;
+    $placeholder.hidden = !!url;
+    $quitar.hidden = !url;
+    $subir.innerHTML = url ? "📷 Cambiar foto" : "📷 Subir foto";
+  }
+
+  $subir.addEventListener("click", () => $file.click());
+  $quitar.addEventListener("click", () => {
+    mostrarFoto("");
+    $status.textContent = "Foto quitada. Guarda para aplicar el cambio.";
+  });
+
+  $file.addEventListener("change", async () => {
+    const archivo = $file.files[0];
+    if (!archivo) return;
+    if (archivo.size > 10 * 1024 * 1024) {
+      $status.textContent = "⚠ La imagen supera 10 MB. Usa una más liviana.";
+      return;
+    }
+    $subir.disabled = true;
+    $guardar.disabled = true;
+    $status.textContent = "Subiendo foto…";
+    try {
+      const url = await subirACloudinary(archivo);
+      mostrarFoto(url);
+      $status.textContent = "Foto subida ✓ Guarda el producto para aplicarla.";
+    } catch (err) {
+      $status.textContent = "⚠ Error al subir: " + err.message;
+    } finally {
+      $subir.disabled = false;
+      $guardar.disabled = false;
+      $file.value = "";
+    }
+  });
 
   $("#form-producto").addEventListener("submit", async (e) => {
     e.preventDefault();

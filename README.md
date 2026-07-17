@@ -72,6 +72,12 @@ El ingreso es con **usuario y contraseña** (usuario `almariaperfumes`). Interna
 
 3. **Importar el catálogo**: entra a `admin.html`, inicia sesión y pulsa **“Importar catálogo local (260 perfumes)”** en la sección Productos. Después asigna costos y stock.
 
+### Fotos de productos (Cloudinary)
+
+Las fotos se suben desde el modal de producto del admin (botón **“Subir foto”**) a Cloudinary y la URL optimizada (`f_auto,q_auto,w_800`) se guarda en Firestore; la tienda la muestra en la tarjeta del perfume.
+
+Configuración en `js/firebase-config.js` (`CLOUDINARY_CONFIG`): `cloudName` y `uploadPreset`. El preset debe existir en Cloudinary como **Unsigned** (Settings → Upload → Upload presets → Add upload preset → Signing Mode: *Unsigned*). Las fotos quedan en la carpeta `perfumes` del Media Library.
+
 ### Colecciones en Firestore
 
 | Colección | Contenido | Acceso |
