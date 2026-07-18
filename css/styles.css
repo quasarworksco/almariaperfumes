@@ -846,14 +846,38 @@ body {
   padding: 1.1rem 1.2rem 1.25rem;
 }
 
+.card-brand-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  margin-bottom: 0.3rem;
+}
+
 .card-brand {
   font-size: 0.72rem;
   font-weight: 600;
   letter-spacing: 0.2em;
   text-transform: uppercase;
   color: var(--vino);
-  margin-bottom: 0.3rem;
 }
+
+.card-stock {
+  flex-shrink: 0;
+  font-size: 0.68rem;
+  font-weight: 500;
+  color: var(--ink-soft);
+  background: #f2eff0;
+  border-radius: 999px;
+  padding: 0.12rem 0.55rem;
+  white-space: nowrap;
+}
+
+.card-stock.bajo { color: var(--vino); background: rgba(114, 47, 55, 0.09); }
+
+.cart-item-stock { color: var(--vino); font-weight: 500; }
+
+.cart-item-qty button:disabled { opacity: 0.35; cursor: not-allowed; }
 
 .card-name {
   font-family: var(--font-body);

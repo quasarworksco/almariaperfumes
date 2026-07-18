@@ -149,7 +149,14 @@
 
     const oferta = enOferta(p);
     const sinStock = agotado(p);
-    const enCarrito = state.carrito.some((it) => it.id === p.id);
+    const enItem = state.carrito.find((it) => it.id === p.id);
+    const enCarrito = !!enItem;
+    const hayStock = typeof p.stock === "number";
+    const disponibles = hayStock ? p.stock : Infinity;
+    const enLimite = enCarrito && enItem.cantidad >= disponibles;
+    const etiquetaStock = !hayStock || sinStock
+      ? ""
+      : `<span class="card-stock ${p.stock <= 3 ? "bajo" : ""}">${p.stock} ${p.stock === 1 ? "disponible" : "disponibles"}</span>`;
 
     return `
       <article class="product-card ${sinStock ? "is-agotado" : ""} ${opts.featured ? "is-featured" : ""}"
@@ -161,7 +168,10 @@
           ${sinStock ? '<span class="agotado-overlay">Agotado</span>' : ""}
         </div>
         <div class="card-body">
-          <p class="card-brand">${escapeHTML(p.casa)}</p>
+          <div class="card-brand-row">
+            <p class="card-brand">${escapeHTML(p.casa)}</p>
+            ${etiquetaStock}
+          </div>
           <h3 class="card-name">${escapeHTML(p.nombre)}</h3>
           <div class="card-footer">
             <div>
@@ -172,8 +182,8 @@
             </div>
             <span class="card-price-alt">${esMayor ? "Detal" : "Mayor"}: ${formatearPrecio(precioAlterno(p))}</span>
           </div>
-          <button type="button" class="card-add ${enCarrito ? "is-added" : ""}" data-add="${p.id}" ${sinStock ? "disabled" : ""}>
-            ${sinStock ? "Agotado" : enCarrito ? "Agregado ✓" : "Agregar al pedido"}
+          <button type="button" class="card-add ${enCarrito ? "is-added" : ""}" data-add="${p.id}" ${sinStock || enLimite ? "disabled" : ""}>
+            ${sinStock ? "Agotado" : enLimite ? "Máximo disponible" : enCarrito ? `Agregado ✓ (${enItem.cantidad})` : "Agregar al pedido"}
           </button>
         </div>
       </article>`;
@@ -249,20 +259,32 @@
     return state.carrito.reduce((s, it) => s + it.cantidad, 0);
   }
 
+  // Máximo que se puede pedir de un producto (su stock, o sin límite si no está definido)
+  function stockMax(id) {
+    const p = buscarProducto(id);
+    return p && typeof p.stock === "number" ? p.stock : Infinity;
+  }
+
   function agregarAlCarrito(id) {
+    const max = stockMax(id);
     const existente = state.carrito.find((it) => it.id === id);
+    const actual = existente ? existente.cantidad : 0;
+    if (actual >= max) return false; // ya alcanzó el stock disponible
     if (existente) existente.cantidad += 1;
     else state.carrito.push({ id, cantidad: 1 });
     guardarCarrito();
     renderProductos();
     renderDestacados();
     renderCarrito();
+    return true;
   }
 
   function cambiarCantidad(id, delta) {
     const it = state.carrito.find((x) => x.id === id);
     if (!it) return;
-    it.cantidad += delta;
+    const nueva = it.cantidad + delta;
+    if (delta > 0 && nueva > stockMax(id)) return; // no supera el stock
+    it.cantidad = nueva;
     if (it.cantidad <= 0) state.carrito = state.carrito.filter((x) => x.id !== id);
     guardarCarrito();
     renderProductos();
@@ -291,16 +313,20 @@
       .map((it) => {
         const p = buscarProducto(it.id);
         if (!p) return "";
+        const hayStock = typeof p.stock === "number";
+        const enLimite = hayStock && it.cantidad >= p.stock;
         return `
         <div class="cart-item">
           <div class="cart-item-info">
             <p class="cart-item-name">${escapeHTML(p.nombre)}</p>
-            <p class="cart-item-brand">${escapeHTML(p.casa)} · ${formatearPrecio(precioActivo(p))} c/u</p>
+            <p class="cart-item-brand">${escapeHTML(p.casa)} · ${formatearPrecio(precioActivo(p))} c/u${
+              hayStock ? ` · <span class="cart-item-stock">${p.stock} disp.</span>` : ""
+            }</p>
           </div>
           <div class="cart-item-qty">
             <button type="button" data-dec="${p.id}" aria-label="Menos">−</button>
             <span>${it.cantidad}</span>
-            <button type="button" data-inc="${p.id}" aria-label="Más">+</button>
+            <button type="button" data-inc="${p.id}" aria-label="Más" ${enLimite ? "disabled" : ""}>+</button>
           </div>
           <span class="cart-item-sub">${formatearPrecio(precioActivo(p) * it.cantidad)}</span>
         </div>`;
