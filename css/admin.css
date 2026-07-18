@@ -271,6 +271,23 @@ input, select, textarea { font-family: inherit; font-size: 1rem; color: var(--in
   font-weight: 500;
 }
 
+.nav-badge {
+  margin-left: auto;
+  min-width: 22px;
+  height: 22px;
+  padding: 0 6px;
+  border-radius: 999px;
+  background: #fff;
+  color: var(--vino);
+  font-size: 0.75rem;
+  font-weight: 700;
+  display: grid;
+  place-items: center;
+}
+
+.nav-item.is-active .nav-badge { background: #fff; color: var(--vino); }
+.nav-item:not(.is-active) .nav-badge { background: var(--vino); color: #fff; }
+
 .sidebar-footer {
   margin-top: auto;
   border-top: 1px solid rgba(255, 255, 255, 0.12);
@@ -545,6 +562,49 @@ input, select, textarea { font-family: inherit; font-size: 1rem; color: var(--in
 .btn-wa-mini svg { width: 20px; height: 20px; }
 
 .deudor-ventas { border-top: 1px solid var(--line); padding: 0.6rem 1.2rem 0.9rem; }
+
+/* Pedidos web */
+.pedido-card {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  margin-bottom: 1rem;
+  overflow: hidden;
+}
+
+.pedido-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.5rem;
+  padding: 1rem 1.2rem 0.7rem;
+}
+
+.pedido-cliente { display: block; font-family: var(--font-display); font-size: 1.3rem; font-weight: 600; }
+.pedido-tel { font-size: 0.85rem; color: var(--ink-soft); }
+.pedido-head-right { display: flex; align-items: center; gap: 0.7rem; }
+.pedido-fecha { font-size: 0.82rem; }
+
+.pedido-items {
+  padding: 0.3rem 1.2rem;
+  border-top: 1px solid var(--line);
+  border-bottom: 1px solid var(--line);
+}
+
+.pedido-foot {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.7rem;
+  padding: 0.9rem 1.2rem;
+}
+
+.pedido-total { font-size: 1.05rem; }
+.pedido-total strong { color: var(--vino); font-size: 1.15rem; }
+.pedido-acciones { display: flex; align-items: center; gap: 0.5rem; }
 
 /* ══════════ MODAL ══════════ */
 

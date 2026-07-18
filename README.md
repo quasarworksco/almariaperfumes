@@ -62,6 +62,11 @@ El ingreso es con **usuario y contraseña** (usuario `almariaperfumes`). Interna
          allow read: if true;        // catálogo público
          allow write: if esAdmin();
        }
+       // Pedidos web: el cliente (sin login) puede crear; solo el admin gestiona
+       match /pedidos/{id} {
+         allow create: if true;
+         allow read, update, delete: if esAdmin();
+       }
        match /costos/{id}      { allow read, write: if esAdmin(); }
        match /ventas/{id}      { allow read, write: if esAdmin(); }
        match /proveedores/{id} { allow read, write: if esAdmin(); }
@@ -87,6 +92,7 @@ Configuración en `js/firebase-config.js` (`CLOUDINARY_CONFIG`): `cloudName` y `
 |---|---|---|
 | `perfumes` | casa, nombre, precioMayor, precioDetal, precioOferta, stock, imagen | lectura pública |
 | `costos` | costo (mi costo), proveedorId — por producto | solo admin |
+| `pedidos` | pedidos enviados desde la tienda (estado: pendiente/confirmado/rechazado) | crear: público · gestionar: solo admin |
 | `ventas` | fecha, cliente, telefono, credito, items, total, pagado, abonos, notas | solo admin |
 | `proveedores` | nombre, teléfono, correo, notas | solo admin |
 | `clientes` | nombre, telefono (registro automático al vender) | solo admin |

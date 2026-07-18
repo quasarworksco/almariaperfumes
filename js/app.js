@@ -373,11 +373,61 @@
     if (state.carrito.length && confirm("¿Vaciar todo el pedido?")) vaciarCarrito();
   });
 
-  document.getElementById("cart-whatsapp").addEventListener("click", () => {
+  document.getElementById("cart-whatsapp").addEventListener("click", async (e) => {
     if (!state.carrito.length) return;
+    const btn = e.currentTarget;
+    const original = btn.innerHTML;
+    // Abre WhatsApp de inmediato (evita bloqueo de pop-ups) …
     const url = `https://wa.me/${WHATSAPP_NUMERO}?text=${encodeURIComponent(textoPedido())}`;
     window.open(url, "_blank");
+    // … y en paralelo registra el pedido en el panel del admin
+    btn.disabled = true;
+    const ok = await guardarPedido();
+    btn.disabled = false;
+    if (ok) {
+      btn.innerHTML = "Pedido enviado ✓";
+      setTimeout(() => { btn.innerHTML = original; }, 2200);
+    }
   });
+
+  /**
+   * Guarda el pedido del cliente en la colección "pedidos" de Firestore
+   * (estado "pendiente") para que aparezca en el panel del admin.
+   */
+  async function guardarPedido() {
+    if (!firestoreDB || !fsMod) return false; // sin conexión: solo va por WhatsApp
+    try {
+      const nombre = document.getElementById("cart-nombre").value.trim();
+      const telefono = document.getElementById("cart-telefono").value.trim();
+      const items = state.carrito
+        .map((it) => {
+          const p = buscarProducto(it.id);
+          if (!p) return null;
+          return {
+            productId: it.id,
+            nombre: p.nombre,
+            casa: p.casa,
+            cantidad: it.cantidad,
+            precioUnit: precioActivo(p),
+          };
+        })
+        .filter(Boolean);
+
+      await fsMod.addDoc(fsMod.collection(firestoreDB, "pedidos"), {
+        fecha: new Date().toISOString(),
+        cliente: nombre || "Cliente web",
+        telefono,
+        tipoPrecio: state.modoPrecio,
+        items,
+        total: totalCarrito(),
+        estado: "pendiente",
+      });
+      return true;
+    } catch (err) {
+      console.error("No se pudo registrar el pedido:", err);
+      return false;
+    }
+  }
 
   document.getElementById("cart-copy").addEventListener("click", async (e) => {
     if (!state.carrito.length) return;
@@ -461,6 +511,7 @@
 
   // ─── Firestore ─────────────────────────────────────────────
   let firestoreDB = null;
+  let fsMod = null; // módulo firestore (collection, addDoc, doc…)
 
   async function cargarDesdeFirestore() {
     if (typeof FIREBASE_CONFIG === "undefined" || !FIREBASE_CONFIG) return;
@@ -469,9 +520,10 @@
       const { initializeApp } = await import(
         "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js"
       );
-      const { getFirestore, collection, getDocs } = await import(
+      fsMod = await import(
         "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js"
       );
+      const { getFirestore, collection, getDocs } = fsMod;
 
       const app = initializeApp(FIREBASE_CONFIG);
       firestoreDB = getFirestore(app);

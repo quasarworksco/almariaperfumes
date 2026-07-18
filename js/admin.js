@@ -18,6 +18,7 @@ const S = {
   fb: null, // { db, auth, fs: módulo firestore }
   productos: [], // perfumes + costo/proveedorId fusionados
   ventas: [],
+  pedidos: [], // pedidos web pendientes de confirmar
   proveedores: [],
   clientes: [], // { id, nombre, telefono }
   movimientos: [],
@@ -137,10 +138,11 @@ async function initFirebase() {
 // ─── Carga de datos ──────────────────────────────────────────
 async function cargarTodo() {
   const { fs, db } = S.fb;
-  const [perfumesSnap, costosSnap, ventasSnap, provSnap, cliSnap, movSnap] = await Promise.all([
+  const [perfumesSnap, costosSnap, ventasSnap, pedidosSnap, provSnap, cliSnap, movSnap] = await Promise.all([
     fs.getDocs(fs.collection(db, "perfumes")),
     fs.getDocs(fs.collection(db, "costos")),
     fs.getDocs(fs.collection(db, "ventas")),
+    fs.getDocs(fs.collection(db, "pedidos")),
     fs.getDocs(fs.collection(db, "proveedores")),
     fs.getDocs(fs.collection(db, "clientes")),
     fs.getDocs(fs.query(fs.collection(db, "movimientos"), fs.orderBy("fecha", "desc"), fs.limit(30))),
@@ -162,6 +164,11 @@ async function cargarTodo() {
     .map((d) => ({ id: d.id, ...d.data() }))
     .sort((a, b) => (b.fecha || "").localeCompare(a.fecha || ""));
 
+  S.pedidos = pedidosSnap.docs
+    .map((d) => ({ id: d.id, ...d.data() }))
+    .filter((p) => p.estado === "pendiente")
+    .sort((a, b) => (b.fecha || "").localeCompare(a.fecha || ""));
+
   S.proveedores = provSnap.docs
     .map((d) => ({ id: d.id, ...d.data() }))
     .sort((a, b) => (a.nombre || "").localeCompare(b.nombre || "", "es"));
@@ -176,6 +183,7 @@ async function cargarTodo() {
 function renderTodo() {
   renderDashboard();
   renderProductos();
+  renderPedidos();
   renderVentas();
   renderDeudores();
   renderProveedores();
@@ -200,6 +208,7 @@ function renderDashboard() {
   const valorInv = S.productos.reduce((s, p) => s + (p.costo || 0) * (p.stock || 0), 0);
 
   $("#dash-stats").innerHTML = `
+    ${stat("Pedidos web", S.pedidos.length, S.pedidos.length ? "vino" : "", "por confirmar")}
     ${stat("Productos", S.productos.length, "", "en catálogo")}
     ${stat("Unidades en stock", unidades, "", `inversión: ${fmt(valorInv)}`)}
     ${stat("Ventas del mes", fmt(totalMes), "vino", `${ventasMes.length} ventas`)}
@@ -546,6 +555,118 @@ async function importarCatalogo() {
     toast("Error al importar: " + err.message, "error");
     btn.disabled = false;
     btn.innerHTML = icon("subir") + " Importar catálogo local (260 perfumes)";
+  }
+}
+
+// ═════════════════════ PEDIDOS WEB ═══════════════════════════
+function renderPedidos() {
+  const n = S.pedidos.length;
+  const $badge = $("#nav-pedidos");
+  $badge.textContent = n;
+  $badge.hidden = n === 0;
+
+  $("#pedidos-empty").hidden = n > 0;
+  $("#pedidos-lista").innerHTML = S.pedidos
+    .map((pe) => {
+      const unidades = (pe.items || []).reduce((s, it) => s + it.cantidad, 0);
+      const tel = telefonoWa(pe.telefono);
+      return `<div class="pedido-card" data-id="${pe.id}">
+        <div class="pedido-head">
+          <div>
+            <span class="pedido-cliente">${esc(pe.cliente || "Cliente web")}</span>
+            ${pe.telefono ? `<span class="pedido-tel">${esc(pe.telefono)}</span>` : '<span class="pedido-tel muted">Sin teléfono</span>'}
+          </div>
+          <div class="pedido-head-right">
+            <span class="badge ${pe.tipoPrecio === "mayor" ? "oferta" : "pendiente"}">${pe.tipoPrecio === "mayor" ? "Al mayor" : "Al detal"}</span>
+            <span class="pedido-fecha muted">${fmtFecha(pe.fecha)}</span>
+          </div>
+        </div>
+        <div class="pedido-items">
+          ${(pe.items || [])
+            .map(
+              (it) => `<div class="mini-row">
+                <span>${it.cantidad}× ${esc(it.nombre)} <span class="muted">· ${esc(it.casa)}</span></span>
+                <strong>${fmt((it.precioUnit || 0) * it.cantidad)}</strong>
+              </div>`
+            )
+            .join("")}
+        </div>
+        <div class="pedido-foot">
+          <span class="pedido-total">${unidades} und · <strong>${fmt(pe.total)}</strong></span>
+          <div class="pedido-acciones">
+            ${tel ? `<a class="btn-wa-mini" href="https://wa.me/${tel}" target="_blank" title="Escribir al cliente">
+              <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M17.5 14.4c-.3-.15-1.77-.87-2.04-.97-.27-.1-.47-.15-.67.15-.2.3-.77.97-.94 1.17-.17.2-.35.22-.65.07-.3-.15-1.26-.46-2.4-1.48-.89-.79-1.49-1.77-1.66-2.07-.17-.3-.02-.46.13-.61.13-.13.3-.35.45-.52.15-.17.2-.3.3-.5.1-.2.05-.37-.02-.52-.08-.15-.67-1.61-.92-2.21-.24-.58-.49-.5-.67-.51h-.57c-.2 0-.52.07-.79.37-.27.3-1.04 1.02-1.04 2.48s1.07 2.88 1.22 3.08c.15.2 2.1 3.2 5.08 4.49.71.31 1.26.49 1.69.62.71.23 1.36.19 1.87.12.57-.09 1.77-.72 2.02-1.42.25-.7.25-1.3.17-1.42-.07-.13-.27-.2-.57-.35zM12 2a10 10 0 0 0-8.6 15.06L2 22l5.05-1.32A10 10 0 1 0 12 2z"/></svg>
+            </a>` : ""}
+            <button class="btn btn-ghost" data-rechazar="${pe.id}">Rechazar</button>
+            <button class="btn btn-primary" data-confirmar="${pe.id}">Confirmar venta</button>
+          </div>
+        </div>
+      </div>`;
+    })
+    .join("");
+}
+
+/** Confirma un pedido web: lo convierte en venta y descuenta stock. */
+async function confirmarPedido(pe) {
+  // Validar stock disponible
+  const sinStock = (pe.items || []).filter((it) => {
+    const p = S.productos.find((x) => x.id === it.productId);
+    return !p || (p.stock || 0) < it.cantidad;
+  });
+  if (sinStock.length) {
+    toast(`Sin stock suficiente para: ${sinStock.map((i) => i.nombre).join(", ")}`, "error");
+    return;
+  }
+  if (!confirm(`¿Confirmar el pedido de ${pe.cliente} por ${fmt(pe.total)}? Se registrará como venta pagada y bajará el stock.`)) return;
+
+  const { fs, db } = S.fb;
+  try {
+    const venta = {
+      fecha: hoyISO(),
+      cliente: pe.cliente || "Cliente web",
+      telefono: pe.telefono || "",
+      credito: false,
+      items: (pe.items || []).map((it) => ({
+        productId: it.productId,
+        nombre: it.nombre,
+        casa: it.casa,
+        cantidad: it.cantidad,
+        precioUnit: it.precioUnit || 0,
+        costoUnit: S.productos.find((x) => x.id === it.productId)?.costo || 0,
+        tipo: pe.tipoPrecio || "detal",
+      })),
+      total: pe.total || 0,
+      pagado: pe.total || 0,
+      abonos: [{ fecha: hoyISO(), monto: pe.total || 0 }],
+      notas: "Pedido web confirmado",
+    };
+    const ref = await fs.addDoc(fs.collection(db, "ventas"), venta);
+    for (const it of venta.items) {
+      const p = S.productos.find((x) => x.id === it.productId);
+      if (p) await ajustarStock(p, -it.cantidad, `pedido web de ${venta.cliente}`);
+    }
+    await registrarCliente(pe.cliente, pe.telefono);
+    // Marca el pedido como confirmado
+    await fs.updateDoc(fs.doc(db, "pedidos", pe.id), { estado: "confirmado", ventaId: ref.id });
+    S.ventas.unshift({ id: ref.id, ...venta });
+    S.pedidos = S.pedidos.filter((x) => x.id !== pe.id);
+    renderTodo();
+    toast(`Pedido confirmado y registrado como venta ✓`, "success");
+  } catch (err) {
+    toast("Error al confirmar: " + err.message, "error");
+  }
+}
+
+async function rechazarPedido(pe) {
+  if (!confirm(`¿Rechazar el pedido de ${pe.cliente}? No se registrará ninguna venta.`)) return;
+  const { fs, db } = S.fb;
+  try {
+    await fs.updateDoc(fs.doc(db, "pedidos", pe.id), { estado: "rechazado" });
+    S.pedidos = S.pedidos.filter((x) => x.id !== pe.id);
+    renderTodo();
+    toast("Pedido rechazado.", "success");
+  } catch (err) {
+    toast("Error: " + err.message, "error");
   }
 }
 
@@ -1070,6 +1191,19 @@ function configurarEventos() {
   });
 
   // Ventas
+  // Pedidos web
+  $("#pedidos-lista").addEventListener("click", (e) => {
+    const conf = e.target.closest("[data-confirmar]");
+    const rech = e.target.closest("[data-rechazar]");
+    if (conf) {
+      const pe = S.pedidos.find((x) => x.id === conf.dataset.confirmar);
+      if (pe) confirmarPedido(pe);
+    } else if (rech) {
+      const pe = S.pedidos.find((x) => x.id === rech.dataset.rechazar);
+      if (pe) rechazarPedido(pe);
+    }
+  });
+
   $("#venta-nueva").addEventListener("click", modalVenta);
   $("#ventas-table").addEventListener("click", (e) => {
     const btn = e.target.closest("[data-accion]");

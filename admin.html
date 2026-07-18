@@ -51,6 +51,9 @@
         <button class="nav-item" data-sec="productos">
           <svg class="icono" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 2.69l5.66 5.66a8 8 0 1 1-11.31 0z"/></svg>
           <span>Productos</span></button>
+        <button class="nav-item" data-sec="pedidos">
+          <svg class="icono" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg>
+          <span>Pedidos</span><span class="nav-badge" id="nav-pedidos" hidden>0</span></button>
         <button class="nav-item" data-sec="ventas">
           <svg class="icono" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
           <span>Ventas</span></button>
@@ -127,6 +130,16 @@
           <h3 class="panel-title">Últimos movimientos de inventario</h3>
           <div id="prod-movimientos"></div>
         </div>
+      </section>
+
+      <!-- ── PEDIDOS ── -->
+      <section class="section" id="sec-pedidos" hidden>
+        <header class="section-head">
+          <h2>Pedidos web</h2>
+          <p class="section-sub">Pedidos que los clientes envían desde la tienda</p>
+        </header>
+        <div id="pedidos-lista"></div>
+        <p class="empty-note" id="pedidos-empty" hidden>No hay pedidos pendientes por ahora.</p>
       </section>
 
       <!-- ── VENTAS ── -->
