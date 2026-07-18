@@ -12,10 +12,12 @@
     busqueda: "",
     casa: "",
     orden: "casa",
-    modoPrecio: "detal", // "detal" | "mayor"
+    modoPrecio: "mayor", // "detal" | "mayor" — se destaca el mayor
+    pagina: 1,
     carrito: cargarCarrito(), // [{ id, cantidad }]
   };
 
+  const POR_PAGINA = 24; // productos por página en el catálogo general
   const CART_KEY = "almaria_carrito";
 
   function cargarCarrito() {
@@ -56,6 +58,8 @@
   const $empty = document.getElementById("empty-state");
   const $reset = document.getElementById("reset-filters");
   const $toggleBtns = document.querySelectorAll(".price-toggle-btn");
+  const $pagination = document.getElementById("pagination");
+  const $catalog = document.querySelector(".catalog");
 
   // Destacados y carrito
   const $featuredSection = document.getElementById("featured-section");
@@ -191,13 +195,59 @@
 
   function renderProductos() {
     const lista = productosFiltrados();
+    const totalPaginas = Math.max(1, Math.ceil(lista.length / POR_PAGINA));
+    if (state.pagina > totalPaginas) state.pagina = totalPaginas;
 
     $count.innerHTML = `<strong>${lista.length}</strong> ${
       lista.length === 1 ? "perfume" : "perfumes"
     }`;
     $empty.hidden = lista.length > 0;
 
-    $grid.innerHTML = lista.map((p, i) => tarjetaHTML(p, i)).join("");
+    const inicio = (state.pagina - 1) * POR_PAGINA;
+    const pagina = lista.slice(inicio, inicio + POR_PAGINA);
+    $grid.innerHTML = pagina.map((p, i) => tarjetaHTML(p, i)).join("");
+
+    renderPaginacion(totalPaginas);
+  }
+
+  function renderPaginacion(totalPaginas) {
+    if (totalPaginas <= 1) {
+      $pagination.innerHTML = "";
+      $pagination.hidden = true;
+      return;
+    }
+    $pagination.hidden = false;
+    const actual = state.pagina;
+
+    // Genera la lista de páginas a mostrar (con "…" cuando hay muchas)
+    const paginas = [];
+    const rango = 1; // páginas a cada lado de la actual
+    for (let p = 1; p <= totalPaginas; p++) {
+      if (p === 1 || p === totalPaginas || (p >= actual - rango && p <= actual + rango)) {
+        paginas.push(p);
+      } else if (paginas[paginas.length - 1] !== "…") {
+        paginas.push("…");
+      }
+    }
+
+    const btn = (p) =>
+      p === "…"
+        ? `<span class="page-ellipsis">…</span>`
+        : `<button type="button" class="page-num ${p === actual ? "is-active" : ""}" data-page="${p}">${p}</button>`;
+
+    $pagination.innerHTML = `
+      <button type="button" class="page-arrow" data-page="${actual - 1}" ${actual === 1 ? "disabled" : ""} aria-label="Anterior">‹</button>
+      ${paginas.map(btn).join("")}
+      <button type="button" class="page-arrow" data-page="${actual + 1}" ${actual === totalPaginas ? "disabled" : ""} aria-label="Siguiente">›</button>
+    `;
+  }
+
+  function irAPagina(p) {
+    state.pagina = p;
+    renderProductos();
+    // Sube al inicio del catálogo
+    const y = $catalog.getBoundingClientRect().top + window.scrollY - 80;
+    window.scrollTo({ top: y, behavior: "smooth" });
   }
 
   function renderDestacados() {
@@ -514,6 +564,7 @@
 
   $search.addEventListener("input", () => {
     state.busqueda = $search.value;
+    state.pagina = 1;
     $searchClear.hidden = !$search.value;
     renderProductos();
   });
@@ -521,6 +572,7 @@
   $searchClear.addEventListener("click", () => {
     $search.value = "";
     state.busqueda = "";
+    state.pagina = 1;
     $searchClear.hidden = true;
     $search.focus();
     renderProductos();
@@ -528,11 +580,13 @@
 
   $brandSelect.addEventListener("change", () => {
     state.casa = $brandSelect.value;
+    state.pagina = 1;
     render();
   });
 
   $sortSelect.addEventListener("change", () => {
     state.orden = $sortSelect.value;
+    state.pagina = 1;
     renderProductos();
   });
 
@@ -540,21 +594,32 @@
     const chip = e.target.closest(".chip");
     if (!chip) return;
     state.casa = chip.dataset.casa;
+    state.pagina = 1;
     render();
   });
 
   $reset.addEventListener("click", () => {
     state.busqueda = "";
     state.casa = "";
+    state.pagina = 1;
     $search.value = "";
     $searchClear.hidden = true;
     render();
+  });
+
+  // Paginación del catálogo
+  $pagination.addEventListener("click", (e) => {
+    const btn = e.target.closest("[data-page]");
+    if (!btn || btn.disabled) return;
+    const p = Number(btn.dataset.page);
+    if (p && p !== state.pagina) irAPagina(p);
   });
 
   $toggleBtns.forEach((btn) => {
     btn.addEventListener("click", () => {
       if (btn.dataset.mode === state.modoPrecio) return;
       state.modoPrecio = btn.dataset.mode;
+      state.pagina = 1;
       $toggleBtns.forEach((b) => {
         const activo = b === btn;
         b.classList.toggle("is-active", activo);

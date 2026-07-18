@@ -44,36 +44,26 @@
     <span class="punto punto-10"></span>
   </div>
 
-  <!-- ══════════ HEADER ══════════ -->
+  <!-- ══════════ HEADER (fijo) ══════════ -->
   <header class="site-header" id="top">
     <div class="header-inner container">
       <a href="#top" class="brand">
-        <span class="brand-mark">A</span>
-        <span class="brand-text">Almaria<em>Perfumes</em></span>
+        <img src="logoalmaria.jpg" alt="Almaria Perfumes" class="brand-logo" />
       </a>
 
-      <!-- Selector de modo de precio: Detal / Mayor -->
+      <!-- Selector de modo de precio: Mayor / Detal (Mayor por defecto) -->
       <div class="price-toggle" role="radiogroup" aria-label="Modo de precio">
-        <button type="button" class="price-toggle-btn is-active" data-mode="detal" role="radio" aria-checked="true">
-          Al Detal
-        </button>
-        <button type="button" class="price-toggle-btn" data-mode="mayor" role="radio" aria-checked="false">
+        <button type="button" class="price-toggle-btn is-active" data-mode="mayor" role="radio" aria-checked="true">
           Al Mayor
+        </button>
+        <button type="button" class="price-toggle-btn" data-mode="detal" role="radio" aria-checked="false">
+          Al Detal
         </button>
       </div>
     </div>
-  </header>
 
-  <!-- ══════════ HERO ══════════ -->
-  <section class="hero">
-    <div class="container">
-      <h1 class="hero-title">Encuentra tu <em>esencia</em></h1>
-      <p class="hero-subtitle">
-        Catálogo de perfumes de las mejores casas del mundo,
-        con precios al mayor y al detal.
-      </p>
-
-      <!-- Barra de búsqueda -->
+    <!-- Barra de búsqueda (fija junto al header) -->
+    <div class="header-search container">
       <div class="search-wrap">
         <svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true">
           <circle cx="11" cy="11" r="7"></circle>
@@ -89,6 +79,17 @@
         />
         <button type="button" id="search-clear" class="search-clear" aria-label="Limpiar búsqueda" hidden>&times;</button>
       </div>
+    </div>
+  </header>
+
+  <!-- ══════════ HERO ══════════ -->
+  <section class="hero">
+    <div class="container">
+      <h1 class="hero-title">Encuentra tu <em>esencia</em></h1>
+      <p class="hero-subtitle">
+        Catálogo de perfumes de las mejores casas del mundo,
+        con precios al mayor y al detal.
+      </p>
     </div>
   </section>
 
@@ -135,6 +136,9 @@
 
     <!-- Grid de productos -->
     <section class="product-grid" id="product-grid" aria-live="polite"></section>
+
+    <!-- Paginación -->
+    <nav class="pagination" id="pagination" aria-label="Paginación del catálogo" hidden></nav>
 
     <!-- Estado vacío -->
     <div class="empty-state" id="empty-state" hidden>
