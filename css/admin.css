@@ -576,21 +576,45 @@ input, select, textarea { font-family: inherit; font-size: 1rem; color: var(--in
 .pedido-head {
   display: flex;
   flex-wrap: wrap;
-  align-items: flex-start;
+  align-items: center;
   justify-content: space-between;
-  gap: 0.5rem;
-  padding: 1rem 1.2rem 0.7rem;
+  gap: 0.5rem 0.8rem;
+  width: 100%;
+  padding: 0.9rem 1.2rem;
+  background: transparent;
+  border: none;
+  text-align: left;
+  cursor: pointer;
+  font-family: inherit;
 }
 
+.pedido-head:hover { background: #faf7f8; }
+
+.pedido-head-info { min-width: 0; }
 .pedido-cliente { display: block; font-family: var(--font-display); font-size: 1.3rem; font-weight: 600; }
 .pedido-tel { font-size: 0.85rem; color: var(--ink-soft); }
 .pedido-head-right { display: flex; align-items: center; gap: 0.7rem; }
+.pedido-resumen { font-size: 0.95rem; white-space: nowrap; }
+.pedido-resumen strong { color: var(--vino); }
 .pedido-fecha { font-size: 0.82rem; }
+
+.pedido-chevron {
+  width: 20px;
+  height: 20px;
+  color: var(--ink-faint);
+  transition: transform 0.25s ease;
+  flex-shrink: 0;
+}
+.pedido-card.is-open .pedido-chevron { transform: rotate(180deg); }
 
 .pedido-items {
   padding: 0.3rem 1.2rem;
   border-top: 1px solid var(--line);
-  border-bottom: 1px solid var(--line);
+}
+
+.pedido-items-meta {
+  font-size: 0.8rem;
+  padding: 0.4rem 0 0.2rem;
 }
 
 .pedido-foot {

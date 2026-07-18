@@ -399,8 +399,41 @@
     if (state.carrito.length && confirm("¿Vaciar todo el pedido?")) vaciarCarrito();
   });
 
+  // Limpia el resaltado de error al escribir en los datos del cliente
+  ["cart-nombre", "cart-telefono"].forEach((id) => {
+    document.getElementById(id).addEventListener("input", (e) => {
+      e.target.classList.remove("input-error");
+      const $err = document.getElementById("cart-datos-error");
+      if (
+        document.getElementById("cart-nombre").value.trim() &&
+        document.getElementById("cart-telefono").value.trim()
+      ) {
+        $err.hidden = true;
+      }
+    });
+  });
+
+  // Valida que el cliente ingrese nombre y teléfono; devuelve true si están OK
+  function validarDatosCliente() {
+    const $nombre = document.getElementById("cart-nombre");
+    const $telefono = document.getElementById("cart-telefono");
+    const $error = document.getElementById("cart-datos-error");
+    const nombreOk = $nombre.value.trim().length >= 2;
+    // teléfono: al menos 7 dígitos
+    const telOk = $telefono.value.replace(/\D/g, "").length >= 7;
+
+    $nombre.classList.toggle("input-error", !nombreOk);
+    $telefono.classList.toggle("input-error", !telOk);
+    $error.hidden = nombreOk && telOk;
+
+    if (!nombreOk) $nombre.focus();
+    else if (!telOk) $telefono.focus();
+    return nombreOk && telOk;
+  }
+
   document.getElementById("cart-whatsapp").addEventListener("click", async (e) => {
     if (!state.carrito.length) return;
+    if (!validarDatosCliente()) return; // nombre y teléfono son obligatorios
     const btn = e.currentTarget;
     const original = btn.innerHTML;
     // Abre WhatsApp de inmediato (evita bloqueo de pop-ups) …

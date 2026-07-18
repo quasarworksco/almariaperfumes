@@ -784,6 +784,17 @@ body {
   box-shadow: 0 0 0 3px rgba(114, 47, 55, 0.10);
 }
 
+.cart-input.input-error {
+  border-color: #c0392b;
+  box-shadow: 0 0 0 3px rgba(192, 57, 43, 0.12);
+}
+
+.cart-datos-error {
+  font-size: 0.82rem;
+  color: #c0392b;
+  font-weight: 500;
+}
+
 .cart-total-row {
   display: flex;
   align-items: baseline;

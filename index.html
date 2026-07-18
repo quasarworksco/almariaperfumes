@@ -178,8 +178,9 @@
     </div>
     <div class="cart-foot" id="cart-foot" hidden>
       <div class="cart-datos">
-        <input type="text" id="cart-nombre" class="cart-input" placeholder="Tu nombre" autocomplete="name" />
-        <input type="tel" id="cart-telefono" class="cart-input" placeholder="Tu teléfono (WhatsApp)" autocomplete="tel" />
+        <input type="text" id="cart-nombre" class="cart-input" placeholder="Tu nombre *" autocomplete="name" required />
+        <input type="tel" id="cart-telefono" class="cart-input" placeholder="Tu teléfono / WhatsApp *" autocomplete="tel" required />
+        <p class="cart-datos-error" id="cart-datos-error" hidden>Completa tu nombre y teléfono para enviar el pedido.</p>
       </div>
       <div class="cart-total-row">
         <span>Total del pedido</span>
