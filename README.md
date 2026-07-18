@@ -10,11 +10,13 @@ Sitio web de comercio electrónico para venta de perfumes, con catálogo de 260 
 
 ## Funcionalidades
 
-- 🔍 **Búsqueda en tiempo real** por nombre de perfume o casa (ignora acentos).
-- 🏷️ **Filtro por casa/marca** mediante selector y chips de casas destacadas.
-- 💰 **Precios al mayor y al detal** con selector en el encabezado; la tarjeta muestra el precio activo y el alterno.
-- ↕️ **Ordenamiento** por casa, nombre o precio.
-- 🃏 Tarjetas de producto con casa, nombre y precio en cuadrícula adaptable.
+- **Búsqueda en tiempo real** por nombre de perfume o casa (ignora acentos).
+- **Filtro por casa/marca** mediante selector y chips de casas destacadas.
+- **Precios al mayor y al detal** con selector en el encabezado; la tarjeta muestra el precio activo y el alterno.
+- **Ordenamiento** por casa, nombre o precio.
+- Tarjetas de producto con casa, nombre y precio en cuadrícula adaptable.
+- **Sección de destacados** (carrusel) con los productos marcados como destacados en el admin.
+- **Carrito de pedido**: el cliente agrega perfumes, ajusta cantidades y luego puede **copiar la lista** o **enviar el pedido por WhatsApp** al número configurado en `WHATSAPP_NUMERO` (`js/firebase-config.js`). El carrito se guarda en el navegador (localStorage).
 
 ## Cómo ejecutarlo
 
@@ -60,9 +62,15 @@ El ingreso es con **usuario y contraseña** (usuario `almariaperfumes`). Interna
          allow read: if true;        // catálogo público
          allow write: if esAdmin();
        }
+       // Pedidos web: el cliente (sin login) puede crear; solo el admin gestiona
+       match /pedidos/{id} {
+         allow create: if true;
+         allow read, update, delete: if esAdmin();
+       }
        match /costos/{id}      { allow read, write: if esAdmin(); }
        match /ventas/{id}      { allow read, write: if esAdmin(); }
        match /proveedores/{id} { allow read, write: if esAdmin(); }
+       match /clientes/{id}    { allow read, write: if esAdmin(); }
        match /movimientos/{id} { allow read, write: if esAdmin(); }
      }
    }
@@ -72,14 +80,22 @@ El ingreso es con **usuario y contraseña** (usuario `almariaperfumes`). Interna
 
 3. **Importar el catálogo**: entra a `admin.html`, inicia sesión y pulsa **“Importar catálogo local (260 perfumes)”** en la sección Productos. Después asigna costos y stock.
 
+### Fotos de productos (Cloudinary)
+
+Las fotos se suben desde el modal de producto del admin (botón **“Subir foto”**) a Cloudinary y la URL optimizada (`f_auto,q_auto,w_800`) se guarda en Firestore; la tienda la muestra en la tarjeta del perfume.
+
+Configuración en `js/firebase-config.js` (`CLOUDINARY_CONFIG`): `cloudName` y `uploadPreset`. El preset debe existir en Cloudinary como **Unsigned** (Settings → Upload → Upload presets → Add upload preset → Signing Mode: *Unsigned*). Las fotos quedan en la carpeta `perfumes` del Media Library.
+
 ### Colecciones en Firestore
 
 | Colección | Contenido | Acceso |
 |---|---|---|
 | `perfumes` | casa, nombre, precioMayor, precioDetal, precioOferta, stock, imagen | lectura pública |
 | `costos` | costo (mi costo), proveedorId — por producto | solo admin |
-| `ventas` | fecha, cliente, items, total, pagado, abonos, notas | solo admin |
+| `pedidos` | pedidos enviados desde la tienda (estado: pendiente/confirmado/rechazado) | crear: público · gestionar: solo admin |
+| `ventas` | fecha, cliente, telefono, credito, items, total, pagado, abonos, notas | solo admin |
 | `proveedores` | nombre, teléfono, correo, notas | solo admin |
+| `clientes` | nombre, telefono (registro automático al vender) | solo admin |
 | `movimientos` | bitácora de entradas/salidas de inventario | solo admin |
 
 Si Firestore no responde o la colección está vacía, la tienda pública usa automáticamente los datos locales de `js/data.js`.

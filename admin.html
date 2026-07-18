@@ -45,16 +45,33 @@
       </div>
 
       <nav class="sidebar-nav" id="nav">
-        <button class="nav-item is-active" data-sec="dashboard">📊 <span>Resumen</span></button>
-        <button class="nav-item" data-sec="productos">🧴 <span>Productos</span></button>
-        <button class="nav-item" data-sec="ventas">🧾 <span>Ventas</span></button>
-        <button class="nav-item" data-sec="deudores">💳 <span>Deudores</span></button>
-        <button class="nav-item" data-sec="proveedores">🚚 <span>Proveedores</span></button>
+        <button class="nav-item is-active" data-sec="dashboard">
+          <svg class="icono" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+          <span>Resumen</span></button>
+        <button class="nav-item" data-sec="productos">
+          <svg class="icono" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 2.69l5.66 5.66a8 8 0 1 1-11.31 0z"/></svg>
+          <span>Productos</span></button>
+        <button class="nav-item" data-sec="pedidos">
+          <svg class="icono" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg>
+          <span>Pedidos</span><span class="nav-badge" id="nav-pedidos" hidden>0</span></button>
+        <button class="nav-item" data-sec="ventas">
+          <svg class="icono" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+          <span>Ventas</span></button>
+        <button class="nav-item" data-sec="deudores">
+          <svg class="icono" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="1" y="4" width="22" height="16" rx="2" ry="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>
+          <span>Deudores</span></button>
+        <button class="nav-item" data-sec="proveedores">
+          <svg class="icono" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="1" y="3" width="15" height="13"/><polygon points="16 8 20 8 23 11 23 16 16 16 16 8"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg>
+          <span>Proveedores</span></button>
       </nav>
 
       <div class="sidebar-footer">
-        <a href="index.html" class="nav-item">🏬 <span>Ver tienda</span></a>
-        <button class="nav-item" id="logout-btn">🚪 <span>Cerrar sesión</span></button>
+        <a href="index.html" class="nav-item">
+          <svg class="icono" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 0 1-8 0"/></svg>
+          <span>Ver tienda</span></a>
+        <button class="nav-item" id="logout-btn">
+          <svg class="icono" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+          <span>Cerrar sesión</span></button>
         <p class="sidebar-user" id="user-email"></p>
       </div>
     </aside>
@@ -104,13 +121,25 @@
           </div>
           <div class="empty-note" id="prod-empty" hidden>
             <p>No hay productos registrados en Firestore.</p>
-            <button class="btn btn-primary" id="prod-seed">⬆ Importar catálogo local (260 perfumes)</button>
+            <button class="btn btn-primary" id="prod-seed">
+              <svg class="icono" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+              Importar catálogo local (260 perfumes)</button>
           </div>
         </div>
         <div class="panel">
           <h3 class="panel-title">Últimos movimientos de inventario</h3>
           <div id="prod-movimientos"></div>
         </div>
+      </section>
+
+      <!-- ── PEDIDOS ── -->
+      <section class="section" id="sec-pedidos" hidden>
+        <header class="section-head">
+          <h2>Pedidos web</h2>
+          <p class="section-sub">Pedidos que los clientes envían desde la tienda</p>
+        </header>
+        <div id="pedidos-lista"></div>
+        <p class="empty-note" id="pedidos-empty" hidden>No hay pedidos pendientes por ahora.</p>
       </section>
 
       <!-- ── VENTAS ── -->
@@ -147,7 +176,7 @@
         </header>
         <div class="stat-grid" id="deuda-stats"></div>
         <div id="deuda-lista"></div>
-        <p class="empty-note" id="deuda-empty" hidden>🎉 No tienes cuentas por cobrar.</p>
+        <p class="empty-note" id="deuda-empty" hidden>No tienes cuentas por cobrar.</p>
       </section>
 
       <!-- ── PROVEEDORES ── -->
