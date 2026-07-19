@@ -610,18 +610,9 @@ function renderPedidos() {
     .join("");
 }
 
-/** Confirma un pedido web: lo convierte en venta y descuenta stock. */
+/** Confirma un pedido web: lo convierte en venta. */
 async function confirmarPedido(pe) {
-  // Validar stock disponible
-  const sinStock = (pe.items || []).filter((it) => {
-    const p = S.productos.find((x) => x.id === it.productId);
-    return !p || (p.stock || 0) < it.cantidad;
-  });
-  if (sinStock.length) {
-    toast(`Sin stock suficiente para: ${sinStock.map((i) => i.nombre).join(", ")}`, "error");
-    return;
-  }
-  if (!confirm(`¿Confirmar el pedido de ${pe.cliente} por ${fmt(pe.total)}? Se registrará como venta pagada y bajará el stock.`)) return;
+  if (!confirm(`¿Confirmar el pedido de ${pe.cliente} por ${fmt(pe.total)}? Se registrará como venta pagada.`)) return;
 
   const { fs, db } = S.fb;
   try {
