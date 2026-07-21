@@ -1199,7 +1199,7 @@ async function guardarMoneda(e) {
   const tasaPropia = Number(f.get("tasaPropia")) || 0;
   const tasaBcv = Number(f.get("tasaBcv")) || 0;
   if (tasaPropia <= 0 || tasaBcv <= 0) {
-    toast("Ingresa ambas tasas (mayores a 0).", "error");
+    toast("Ingresa tu tasa y asegúrate de tener la tasa BCV cargada.", "error");
     return;
   }
   const datos = { tasaPropia, tasaBcv, actualizado: hoyISO() };
@@ -1214,6 +1214,40 @@ async function guardarMoneda(e) {
   }
 }
 
+/** Trae la tasa BCV automáticamente desde DolarAPI y la coloca en el formulario. */
+async function refrescarBcv(forzar = false) {
+  const $estado = $("#moneda-bcv-estado");
+  const $bcv = $("#moneda-bcv");
+  if (typeof obtenerBcv24h !== "function") return;
+  $estado.textContent = "Consultando BCV…";
+  try {
+    // forzar = ignora la caché de 24h
+    let tasa;
+    if (forzar && typeof fetchBcvOficial === "function") {
+      const r = await fetchBcvOficial();
+      tasa = r.tasa;
+      try {
+        localStorage.setItem(
+          "almaria_bcv",
+          JSON.stringify({ tasa, fecha: r.fecha, ts: Date.now() })
+        );
+      } catch {}
+    } else {
+      tasa = await obtenerBcv24h();
+    }
+    if (tasa) {
+      $bcv.value = tasa;
+      S.moneda.tasaBcv = tasa;
+      $estado.textContent = `BCV: Bs ${fmtBs(tasa)} por $`;
+      renderMoneda();
+    } else {
+      $estado.textContent = "No se pudo obtener la tasa. Ingrésala manualmente.";
+    }
+  } catch (err) {
+    $estado.textContent = "No se pudo obtener la tasa (¿sin internet?). Ingrésala manualmente.";
+  }
+}
+
 // ═════════════════════ NAVEGACIÓN Y EVENTOS ══════════════════
 function configurarEventos() {
   // Navegación entre secciones
@@ -1222,6 +1256,8 @@ function configurarEventos() {
     if (!btn) return;
     $$(".nav-item[data-sec]").forEach((b) => b.classList.toggle("is-active", b === btn));
     $$(".section").forEach((s) => (s.hidden = s.id !== `sec-${btn.dataset.sec}`));
+    // Al abrir Moneda, actualiza el BCV automáticamente (caché 24h)
+    if (btn.dataset.sec === "moneda") refrescarBcv(false);
   });
 
   // Cerrar modal con botones [data-cerrar]
@@ -1299,6 +1335,7 @@ function configurarEventos() {
 
   // Moneda / Bs
   $("#form-moneda").addEventListener("submit", guardarMoneda);
+  $("#moneda-refrescar").addEventListener("click", () => refrescarBcv(true));
   ["moneda-propia", "moneda-bcv"].forEach((id) =>
     $("#" + id).addEventListener("input", () => {
       S.moneda.tasaPropia = Number($("#moneda-propia").value) || 0;
@@ -1331,6 +1368,7 @@ async function main() {
       try {
         await cargarTodo();
         renderTodo();
+        refrescarBcv(false); // trae el BCV automático (caché 24h)
       } catch (err) {
         toast("Error al cargar datos: " + err.message + " — Revisa las reglas de Firestore.", "error");
       }

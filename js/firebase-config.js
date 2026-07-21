@@ -37,3 +37,45 @@ const CLOUDINARY_CONFIG = {
  * envían los pedidos que arma el cliente desde el carrito de la tienda.
  */
 const WHATSAPP_NUMERO = "584146039842";
+
+/**
+ * DolarAPI — tasa oficial del BCV para Venezuela.
+ * La tasa viene en el campo "promedio".
+ */
+const DOLARAPI_BCV_URL = "https://ve.dolarapi.com/v1/dolares/oficial";
+const BCV_CACHE_KEY = "almaria_bcv";
+const BCV_TTL_MS = 24 * 60 * 60 * 1000; // 24 horas
+
+/** Consulta la tasa oficial del BCV en DolarAPI. */
+async function fetchBcvOficial() {
+  const resp = await fetch(DOLARAPI_BCV_URL, { cache: "no-store" });
+  if (!resp.ok) throw new Error("HTTP " + resp.status);
+  const d = await resp.json();
+  const tasa = Number(d.promedio) || 0;
+  if (!tasa) throw new Error("Respuesta sin tasa (promedio)");
+  return { tasa, fecha: d.fechaActualizacion || new Date().toISOString() };
+}
+
+/**
+ * Devuelve la tasa BCV usando una caché de 24h en el navegador.
+ * Si la API falla, usa el último valor cacheado (aunque esté vencido).
+ * Devuelve 0 si no hay forma de obtenerla.
+ */
+async function obtenerBcv24h() {
+  let cache = null;
+  try {
+    cache = JSON.parse(localStorage.getItem(BCV_CACHE_KEY));
+  } catch {
+    cache = null;
+  }
+  if (cache && cache.tasa && Date.now() - cache.ts < BCV_TTL_MS) {
+    return cache.tasa;
+  }
+  try {
+    const { tasa, fecha } = await fetchBcvOficial();
+    localStorage.setItem(BCV_CACHE_KEY, JSON.stringify({ tasa, fecha, ts: Date.now() }));
+    return tasa;
+  } catch {
+    return cache && cache.tasa ? cache.tasa : 0; // respaldo: última conocida
+  }
+}

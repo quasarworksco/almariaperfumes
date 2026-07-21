@@ -102,6 +102,13 @@ Configuración en `js/firebase-config.js` (`CLOUDINARY_CONFIG`): `cloudName` y `
 | `proveedores` | nombre, teléfono, correo, notas | solo admin |
 | `clientes` | nombre, telefono (registro automático al vender) | solo admin |
 | `movimientos` | bitácora de entradas/salidas de inventario | solo admin |
+| `config/moneda` | tasaPropia (mi tasa) y tasaBcv (respaldo) | lectura pública · escritura admin |
+
+### Moneda / Bolívares (tasa BCV automática)
+
+En la sección **Moneda / Bs** del admin se fija **tu tasa** (Bs por $). La **tasa BCV** se obtiene **automáticamente** desde [DolarAPI](https://ve.dolarapi.com/v1/dolares/oficial) (campo `promedio`) y se refresca cada **24 horas** (caché en el navegador). Botón **"Actualizar tasa BCV ahora"** para forzar la consulta.
+
+En la tienda, cada tarjeta muestra: **precio promo en divisas** ($), **precio en bolívares** (× tu tasa) y **costo base** en $ (Bs ÷ BCV). Si DolarAPI no responde, se usa el último BCV conocido (caché) o el guardado en `config/moneda` como respaldo.
 
 Si Firestore no responde o la colección está vacía, la tienda pública usa automáticamente los datos locales de `js/data.js`.
 

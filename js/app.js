@@ -114,6 +114,20 @@
     return { bs, base: bs / tasaBcv };
   }
 
+  // Obtiene la tasa BCV automáticamente (DolarAPI, caché 24h) y refresca los precios
+  async function aplicarBcvAutomatico() {
+    if (typeof obtenerBcv24h !== "function") return;
+    try {
+      const bcv = await obtenerBcv24h();
+      if (bcv) {
+        state.moneda.tasaBcv = bcv;
+        render();
+      }
+    } catch {
+      /* se mantiene el respaldo de la config */
+    }
+  }
+
   // Degradado estable por casa (misma casa → mismo color)
   function gradientePara(casa) {
     let hash = 0;
@@ -669,13 +683,15 @@
           const m = monedaDoc.data();
           state.moneda = {
             tasaPropia: Number(m.tasaPropia) || 0,
-            tasaBcv: Number(m.tasaBcv) || 0,
+            tasaBcv: Number(m.tasaBcv) || 0, // respaldo si DolarAPI no responde
           };
           render();
         }
       } catch (e) {
         /* sin config aún: no se muestran conversiones */
       }
+      // BCV automático desde DolarAPI (caché 24h); si funciona, sobreescribe el respaldo
+      aplicarBcvAutomatico();
 
       const snapshot = await getDocs(collection(firestoreDB, FIRESTORE_COLLECTION));
       if (snapshot.empty) {
