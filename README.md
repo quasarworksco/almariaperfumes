@@ -67,6 +67,11 @@ El ingreso es con **usuario y contraseña** (usuario `almariaperfumes`). Interna
          allow create: if true;
          allow read, update, delete: if esAdmin();
        }
+       // Config pública (tasas de moneda): la lee la tienda, la edita el admin
+       match /config/{id} {
+         allow read: if true;
+         allow write: if esAdmin();
+       }
        match /costos/{id}      { allow read, write: if esAdmin(); }
        match /ventas/{id}      { allow read, write: if esAdmin(); }
        match /proveedores/{id} { allow read, write: if esAdmin(); }

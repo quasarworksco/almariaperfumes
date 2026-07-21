@@ -14,6 +14,7 @@
     orden: "casa",
     modoPrecio: "mayor", // "detal" | "mayor" — se destaca el mayor
     pagina: 1,
+    moneda: { tasaPropia: 0, tasaBcv: 0 }, // tasas para mostrar Bs y base BCV
     carrito: cargarCarrito(), // [{ id, cantidad }]
   };
 
@@ -99,6 +100,20 @@
   // Stock ignorado en la tienda: todos los perfumes se muestran disponibles
   const agotado = () => false;
 
+  // Formato de bolívares (es-VE: 17.000)
+  const fmtBs = (n) =>
+    new Intl.NumberFormat("es-VE", { minimumFractionDigits: 0, maximumFractionDigits: 2 }).format(
+      Number(n) || 0
+    );
+
+  // Convierte un precio en $ a Bs (con mi tasa) y al costo base en $ (÷ BCV)
+  function conversion(usd) {
+    const { tasaPropia, tasaBcv } = state.moneda;
+    if (!tasaPropia || !tasaBcv) return null;
+    const bs = usd * tasaPropia;
+    return { bs, base: bs / tasaBcv };
+  }
+
   // Degradado estable por casa (misma casa → mismo color)
   function gradientePara(casa) {
     let hash = 0;
@@ -145,6 +160,23 @@
     return lista;
   }
 
+  // Bloque de conversión a Bs y costo base (BCV) para la tarjeta
+  function conversionHTML(usd) {
+    const c = conversion(usd);
+    if (!c) return "";
+    return `
+      <div class="card-bs">
+        <div class="bs-row">
+          <span class="bs-label">En bolívares</span>
+          <span class="bs-value">Bs ${fmtBs(c.bs)}</span>
+        </div>
+        <div class="bs-row bs-base">
+          <span class="bs-label">Costo base (BCV)</span>
+          <span class="bs-value"><s>${formatearPrecio(c.base)}</s></span>
+        </div>
+      </div>`;
+  }
+
   // ─── Renderizado ───────────────────────────────────────────
   function tarjetaHTML(p, i, opts = {}) {
     const esMayor = state.modoPrecio === "mayor";
@@ -171,13 +203,14 @@
           <h3 class="card-name">${escapeHTML(p.nombre)}</h3>
           <div class="card-footer">
             <div>
-              <span class="card-price-label">Precio ${esMayor ? "al mayor" : "al detal"}</span>
+              <span class="card-price-label">Promo en divisas · ${esMayor ? "mayor" : "detal"}</span>
               <span class="card-price">${formatearPrecio(precioActivo(p))}
                 ${oferta ? `<s class="price-tachado">${formatearPrecio(p.precioDetal)}</s>` : ""}
               </span>
             </div>
             <span class="card-price-alt">${esMayor ? "Detal" : "Mayor"}: ${formatearPrecio(precioAlterno(p))}</span>
           </div>
+          ${conversionHTML(precioActivo(p))}
           <button type="button" class="card-add ${enCarrito ? "is-added" : ""}" data-add="${p.id}">
             ${enCarrito ? `Agregado ✓ (${enItem.cantidad})` : "Agregar al pedido"}
           </button>
@@ -624,10 +657,25 @@
       fsMod = await import(
         "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js"
       );
-      const { getFirestore, collection, getDocs } = fsMod;
+      const { getFirestore, collection, getDocs, doc, getDoc } = fsMod;
 
       const app = initializeApp(FIREBASE_CONFIG);
       firestoreDB = getFirestore(app);
+
+      // Tasas de moneda (config/moneda) — aplican tanto a datos de Firestore como locales
+      try {
+        const monedaDoc = await getDoc(doc(firestoreDB, "config", "moneda"));
+        if (monedaDoc.exists()) {
+          const m = monedaDoc.data();
+          state.moneda = {
+            tasaPropia: Number(m.tasaPropia) || 0,
+            tasaBcv: Number(m.tasaBcv) || 0,
+          };
+          render();
+        }
+      } catch (e) {
+        /* sin config aún: no se muestran conversiones */
+      }
 
       const snapshot = await getDocs(collection(firestoreDB, FIRESTORE_COLLECTION));
       if (snapshot.empty) {

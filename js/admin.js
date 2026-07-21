@@ -22,6 +22,7 @@ const S = {
   proveedores: [],
   clientes: [], // { id, nombre, telefono }
   movimientos: [],
+  moneda: { tasaPropia: 0, tasaBcv: 0, actualizado: "" },
   prodBusqueda: "",
   carrito: [], // items de la venta en curso
 };
@@ -178,6 +179,14 @@ async function cargarTodo() {
     .sort((a, b) => (a.nombre || "").localeCompare(b.nombre || "", "es"));
 
   S.movimientos = movSnap.docs.map((d) => ({ id: d.id, ...d.data() }));
+
+  // Config de moneda (documento único config/moneda)
+  try {
+    const monedaDoc = await fs.getDoc(fs.doc(db, "config", "moneda"));
+    if (monedaDoc.exists()) S.moneda = { ...S.moneda, ...monedaDoc.data() };
+  } catch (e) {
+    /* si no existe aún, quedan los valores por defecto */
+  }
 }
 
 function renderTodo() {
@@ -187,6 +196,7 @@ function renderTodo() {
   renderVentas();
   renderDeudores();
   renderProveedores();
+  renderMoneda();
 }
 
 // ═════════════════════ DASHBOARD ═════════════════════════════
@@ -1153,6 +1163,57 @@ async function eliminarProveedor(pr) {
   }
 }
 
+// ═════════════════════ MONEDA / Bs ═══════════════════════════
+const fmtBs = (n) =>
+  new Intl.NumberFormat("es-VE", { minimumFractionDigits: 0, maximumFractionDigits: 2 }).format(
+    Number(n) || 0
+  );
+
+function renderMoneda() {
+  const { tasaPropia, tasaBcv, actualizado } = S.moneda;
+  if (document.activeElement?.id !== "moneda-propia") $("#moneda-propia").value = tasaPropia || "";
+  if (document.activeElement?.id !== "moneda-bcv") $("#moneda-bcv").value = tasaBcv || "";
+
+  $("#moneda-actualizado").textContent = actualizado
+    ? `Última actualización: ${fmtFecha(actualizado)}`
+    : "Aún no has guardado las tasas.";
+
+  // Vista previa con un ejemplo de $20
+  const ejemplo = 20;
+  const bs = tasaPropia ? ejemplo * tasaPropia : 0;
+  const base = tasaBcv ? bs / tasaBcv : 0;
+  $("#moneda-preview").innerHTML =
+    tasaPropia && tasaBcv
+      ? `
+      <div class="moneda-ej">
+        <div class="moneda-ej-row"><span>Precio promo en divisas</span><strong>${fmt(ejemplo)}</strong></div>
+        <div class="moneda-ej-row"><span>Precio en bolívares (× ${fmtBs(tasaPropia)})</span><strong>Bs ${fmtBs(bs)}</strong></div>
+        <div class="moneda-ej-row destacado"><span>Costo base (÷ BCV ${fmtBs(tasaBcv)})</span><strong>${fmt(base)}</strong></div>
+      </div>`
+      : `<p class="muted">Ingresa ambas tasas para ver el ejemplo.</p>`;
+}
+
+async function guardarMoneda(e) {
+  e.preventDefault();
+  const f = new FormData(e.target);
+  const tasaPropia = Number(f.get("tasaPropia")) || 0;
+  const tasaBcv = Number(f.get("tasaBcv")) || 0;
+  if (tasaPropia <= 0 || tasaBcv <= 0) {
+    toast("Ingresa ambas tasas (mayores a 0).", "error");
+    return;
+  }
+  const datos = { tasaPropia, tasaBcv, actualizado: hoyISO() };
+  const { fs, db } = S.fb;
+  try {
+    await fs.setDoc(fs.doc(db, "config", "moneda"), datos);
+    S.moneda = datos;
+    renderMoneda();
+    toast("Tasas guardadas ✓ Ya se reflejan en la tienda.", "success");
+  } catch (err) {
+    toast("Error al guardar: " + err.message, "error");
+  }
+}
+
 // ═════════════════════ NAVEGACIÓN Y EVENTOS ══════════════════
 function configurarEventos() {
   // Navegación entre secciones
@@ -1235,6 +1296,16 @@ function configurarEventos() {
     if (btn.dataset.accion === "editar") modalProveedor(pr);
     else if (btn.dataset.accion === "eliminar") eliminarProveedor(pr);
   });
+
+  // Moneda / Bs
+  $("#form-moneda").addEventListener("submit", guardarMoneda);
+  ["moneda-propia", "moneda-bcv"].forEach((id) =>
+    $("#" + id).addEventListener("input", () => {
+      S.moneda.tasaPropia = Number($("#moneda-propia").value) || 0;
+      S.moneda.tasaBcv = Number($("#moneda-bcv").value) || 0;
+      renderMoneda();
+    })
+  );
 }
 
 // ═════════════════════ ARRANQUE ══════════════════════════════

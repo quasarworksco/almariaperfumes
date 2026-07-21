@@ -466,6 +466,22 @@ input, select, textarea { font-family: inherit; font-size: 1rem; color: var(--in
 .badge.pendiente { background: var(--red-bg); color: var(--red); }
 .badge.destacado { background: var(--vino); color: #fff; }
 
+/* Vista previa de moneda */
+.moneda-preview { margin-top: 0.4rem; }
+.moneda-ej { display: flex; flex-direction: column; gap: 0.2rem; }
+.moneda-ej-row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.8rem;
+  padding: 0.55rem 0;
+  border-bottom: 1px dashed var(--line);
+  font-size: 0.95rem;
+}
+.moneda-ej-row:last-child { border-bottom: none; }
+.moneda-ej-row strong { font-variant-numeric: tabular-nums; font-size: 1.05rem; }
+.moneda-ej-row.destacado strong { color: var(--vino); font-size: 1.2rem; }
+
 /* Campo checkbox */
 .check-field {
   display: flex;

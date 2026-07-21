@@ -532,6 +532,41 @@ body {
   color: #fff;
 }
 
+/* Conversión a Bs y costo base (BCV) */
+.card-bs {
+  margin-top: 0.7rem;
+  padding-top: 0.7rem;
+  border-top: 1px dashed var(--line);
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+}
+
+.bs-row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.bs-label {
+  font-size: 0.66rem;
+  font-weight: 500;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--ink-faint);
+}
+
+.bs-value {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--ink);
+  font-variant-numeric: tabular-nums;
+}
+
+.bs-base .bs-value { color: var(--ink-faint); font-weight: 500; }
+.bs-base .bs-value s { text-decoration-color: var(--vino-claro); }
+
 /* Botón agregar al pedido */
 .card-add {
   margin-top: 0.9rem;
