@@ -1197,9 +1197,18 @@ async function guardarMoneda(e) {
   e.preventDefault();
   const f = new FormData(e.target);
   const tasaPropia = Number(f.get("tasaPropia")) || 0;
-  const tasaBcv = Number(f.get("tasaBcv")) || 0;
-  if (tasaPropia <= 0 || tasaBcv <= 0) {
-    toast("Ingresa tu tasa y asegúrate de tener la tasa BCV cargada.", "error");
+  // La tasa BCV NO es editable: siempre proviene de DolarAPI (S.moneda.tasaBcv)
+  let tasaBcv = S.moneda.tasaBcv || 0;
+  if (!tasaBcv) {
+    await refrescarBcv(true); // último intento de obtenerla
+    tasaBcv = S.moneda.tasaBcv || 0;
+  }
+  if (tasaPropia <= 0) {
+    toast("Ingresa tu tasa (mayor a 0).", "error");
+    return;
+  }
+  if (tasaBcv <= 0) {
+    toast("No se pudo obtener la tasa BCV automática. Intenta 'Actualizar tasa BCV'.", "error");
     return;
   }
   const datos = { tasaPropia, tasaBcv, actualizado: hoyISO() };
@@ -1333,16 +1342,13 @@ function configurarEventos() {
     else if (btn.dataset.accion === "eliminar") eliminarProveedor(pr);
   });
 
-  // Moneda / Bs
+  // Moneda / Bs (la tasa BCV no es editable: solo la define DolarAPI)
   $("#form-moneda").addEventListener("submit", guardarMoneda);
   $("#moneda-refrescar").addEventListener("click", () => refrescarBcv(true));
-  ["moneda-propia", "moneda-bcv"].forEach((id) =>
-    $("#" + id).addEventListener("input", () => {
-      S.moneda.tasaPropia = Number($("#moneda-propia").value) || 0;
-      S.moneda.tasaBcv = Number($("#moneda-bcv").value) || 0;
-      renderMoneda();
-    })
-  );
+  $("#moneda-propia").addEventListener("input", () => {
+    S.moneda.tasaPropia = Number($("#moneda-propia").value) || 0;
+    renderMoneda();
+  });
 }
 
 // ═════════════════════ ARRANQUE ══════════════════════════════

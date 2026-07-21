@@ -466,6 +466,13 @@ input, select, textarea { font-family: inherit; font-size: 1rem; color: var(--in
 .badge.pendiente { background: var(--red-bg); color: var(--red); }
 .badge.destacado { background: var(--vino); color: #fff; }
 
+/* Campo de solo lectura (tasa BCV automática) */
+.field input[readonly] {
+  background: #f4f2f3;
+  color: var(--ink-soft);
+  cursor: not-allowed;
+}
+
 /* Vista previa de moneda */
 .moneda-preview { margin-top: 0.4rem; }
 .moneda-ej { display: flex; flex-direction: column; gap: 0.2rem; }
