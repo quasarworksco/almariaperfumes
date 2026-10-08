@@ -1120,6 +1120,23 @@ body {
 
 .footer-copy { font-size: 0.75rem; color: rgba(255, 255, 255, 0.4); }
 
+.footer-dgp {
+  margin-top: 1rem;
+  padding-top: 1rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.12);
+  font-size: 0.8rem;
+  color: rgba(255, 255, 255, 0.55);
+  letter-spacing: 0.04em;
+}
+
+.footer-dgp a {
+  color: var(--vino-claro);
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.footer-dgp a:hover { text-decoration: underline; }
+
 /* ══════════ RESPONSIVE ══════════ */
 
 @media (max-width: 640px) {
