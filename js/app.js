@@ -676,7 +676,20 @@
       const app = initializeApp(FIREBASE_CONFIG);
       firestoreDB = getFirestore(app);
 
-      // Tasas de moneda (config/moneda) — aplican tanto a datos de Firestore como locales
+      // ── Caché local: evita releer los 260 perfumes + tasas en cada visita ──
+      // Reduce drásticamente las lecturas de Firestore (una recarga dentro de
+      // la ventana de caché NO consume lecturas).
+      const cache = leerCacheTienda();
+      if (cache) {
+        state.productos = cache.productos;
+        if (cache.moneda) state.moneda = cache.moneda;
+        render();
+        aplicarBcvAutomatico(); // BCV desde DolarAPI (su propia caché de 24h)
+        console.info("Catálogo cargado desde caché (sin lecturas de Firestore).");
+        return;
+      }
+
+      // Tasas de moneda (config/moneda)
       try {
         const monedaDoc = await getDoc(doc(firestoreDB, "config", "moneda"));
         if (monedaDoc.exists()) {
@@ -690,7 +703,6 @@
       } catch (e) {
         /* sin config aún: no se muestran conversiones */
       }
-      // BCV automático desde DolarAPI (caché 24h); si funciona, sobreescribe el respaldo
       aplicarBcvAutomatico();
 
       const snapshot = await getDocs(collection(firestoreDB, FIRESTORE_COLLECTION));
@@ -716,11 +728,35 @@
           destacado: !!d.destacado,
         };
       });
+      guardarCacheTienda(); // deja el catálogo y tasas en caché
       render();
       console.info(`Catálogo cargado desde Firestore: ${state.productos.length} perfumes.`);
     } catch (err) {
       console.error("No se pudo cargar Firestore, usando datos locales:", err);
     }
+  }
+
+  // ── Caché de catálogo + tasas (15 min) para ahorrar lecturas ──
+  const CACHE_KEY = "almaria_tienda_v1";
+  const CACHE_TTL = 15 * 60 * 1000; // 15 minutos
+
+  function leerCacheTienda() {
+    try {
+      const c = JSON.parse(localStorage.getItem(CACHE_KEY));
+      if (c && Array.isArray(c.productos) && c.productos.length && Date.now() - c.ts < CACHE_TTL) {
+        return c;
+      }
+    } catch {}
+    return null;
+  }
+
+  function guardarCacheTienda() {
+    try {
+      localStorage.setItem(
+        CACHE_KEY,
+        JSON.stringify({ productos: state.productos, moneda: state.moneda, ts: Date.now() })
+      );
+    } catch {}
   }
 
   /**

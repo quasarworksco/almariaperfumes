@@ -1747,19 +1747,24 @@ async function main() {
   S.fb = { db: fb.db, fs: fb.fs, auth: fb.authInst };
   const { onAuthStateChanged, signInWithEmailAndPassword, signOut } = fb.auth;
 
+  let datosCargados = false; // evita releer todo en cada refresco de sesión (ahorra lecturas)
   onAuthStateChanged(fb.authInst, async (user) => {
     if (user) {
       $("#login-screen").hidden = true;
       $("#admin-app").hidden = false;
       $("#user-email").textContent = (user.email || "").replace("@almariaperfumes.com", "");
+      if (datosCargados) return; // ya se cargaron los datos en esta sesión
+      datosCargados = true;
       try {
         await cargarTodo();
         renderTodo();
         refrescarBcv(false); // trae el BCV automático (caché 24h)
       } catch (err) {
+        datosCargados = false; // permite reintentar si falló
         toast("Error al cargar datos: " + err.message + " — Revisa las reglas de Firestore.", "error");
       }
     } else {
+      datosCargados = false;
       $("#login-screen").hidden = false;
       $("#admin-app").hidden = true;
     }
