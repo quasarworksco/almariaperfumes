@@ -908,3 +908,73 @@ input, select, textarea { font-family: inherit; font-size: 1rem; color: var(--in
 @media (max-width: 420px) {
   .stat-grid { grid-template-columns: 1fr; }
 }
+
+/* ══════════ FACTURA ══════════ */
+.factura-barra {
+  display: flex;
+  gap: 0.6rem;
+  justify-content: flex-end;
+  margin-bottom: 1rem;
+}
+
+.factura-doc { color: #1a1a1a; font-size: 0.9rem; line-height: 1.5; }
+
+.factura-doc .f-head {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  border-bottom: 2px solid var(--vino);
+  padding-bottom: 0.8rem;
+  margin-bottom: 0.9rem;
+}
+
+.f-razon { font-family: var(--font-display); font-size: 1.5rem; font-weight: 700; color: var(--vino); }
+.f-sub { font-size: 0.82rem; color: #555; }
+.f-meta { text-align: right; flex-shrink: 0; }
+.f-titulo { font-family: var(--font-display); font-size: 1.5rem; font-weight: 700; letter-spacing: 0.08em; }
+
+.f-cliente {
+  background: #f7f4f5;
+  border-radius: 8px;
+  padding: 0.7rem 0.9rem;
+  margin-bottom: 0.9rem;
+  font-size: 0.88rem;
+}
+.f-cliente p { margin: 0.12rem 0; }
+
+.f-items { width: 100%; border-collapse: collapse; font-size: 0.88rem; margin-bottom: 0.9rem; }
+.f-items th {
+  text-align: left;
+  border-bottom: 1.5px solid #ccc;
+  padding: 0.4rem 0.5rem;
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: #666;
+}
+.f-items td { border-bottom: 1px solid #eee; padding: 0.45rem 0.5rem; }
+.f-items .c { text-align: center; }
+.f-items .r { text-align: right; }
+.f-casa { color: #999; font-size: 0.78rem; }
+
+.f-totales { margin-left: auto; max-width: 340px; }
+.f-tot-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.32rem 0;
+  border-bottom: 1px dashed #ddd;
+}
+.f-tot-row:last-child { border-bottom: none; }
+.f-tot-row.grande strong { font-size: 1.25rem; color: var(--vino); }
+.f-tot-row.saldo strong { color: #a44444; }
+
+.f-pie { text-align: center; margin-top: 1.3rem; color: #888; font-size: 0.82rem; }
+
+/* Impresión: solo se imprime la factura */
+@media print {
+  body * { visibility: hidden; }
+  #factura-print, #factura-print * { visibility: visible; }
+  #factura-print { position: absolute; left: 0; top: 0; width: 100%; padding: 1rem 1.2rem; }
+  .no-print { display: none !important; }
+}

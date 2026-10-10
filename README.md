@@ -72,11 +72,12 @@ El ingreso es con **usuario y contraseña** (usuario `almariaperfumes`). Interna
          allow read: if true;
          allow write: if esAdmin();
        }
-       match /costos/{id}      { allow read, write: if esAdmin(); }
-       match /ventas/{id}      { allow read, write: if esAdmin(); }
-       match /proveedores/{id} { allow read, write: if esAdmin(); }
-       match /clientes/{id}    { allow read, write: if esAdmin(); }
-       match /movimientos/{id} { allow read, write: if esAdmin(); }
+       match /costos/{id}       { allow read, write: if esAdmin(); }
+       match /ventas/{id}       { allow read, write: if esAdmin(); }
+       match /proveedores/{id}  { allow read, write: if esAdmin(); }
+       match /clientes/{id}     { allow read, write: if esAdmin(); }
+       match /devoluciones/{id} { allow read, write: if esAdmin(); }
+       match /movimientos/{id}  { allow read, write: if esAdmin(); }
      }
    }
    ```

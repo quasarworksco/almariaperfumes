@@ -20,9 +20,12 @@ const S = {
   ventas: [],
   pedidos: [], // pedidos web pendientes de confirmar
   proveedores: [],
-  clientes: [], // { id, nombre, telefono }
+  clientes: [], // { id, nombre, cedula, telefono }
+  devoluciones: [], // { id, fecha, productId, nombre, casa, cliente, cantidad, motivo, estado }
   movimientos: [],
   moneda: { tasaPropia: 0, tasaBcv: 0, actualizado: "" },
+  negocio: { razonSocial: "", rif: "", direccion: "", telefono: "", correlativo: 0 },
+  facturaMes: new Date().toISOString().slice(0, 7), // YYYY-MM
   prodBusqueda: "",
   carrito: [], // items de la venta en curso
 };
@@ -68,6 +71,8 @@ const ICONS = {
   subir: '<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/>',
   dolar: '<line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>',
   gota: '<path d="M12 2.69l5.66 5.66a8 8 0 1 1-11.31 0z"/>',
+  factura: '<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/>',
+  check: '<polyline points="20 6 9 17 4 12"/>',
 };
 
 const icon = (nombre, cls = "") =>
@@ -139,13 +144,14 @@ async function initFirebase() {
 // ─── Carga de datos ──────────────────────────────────────────
 async function cargarTodo() {
   const { fs, db } = S.fb;
-  const [perfumesSnap, costosSnap, ventasSnap, pedidosSnap, provSnap, cliSnap, movSnap] = await Promise.all([
+  const [perfumesSnap, costosSnap, ventasSnap, pedidosSnap, provSnap, cliSnap, devolSnap, movSnap] = await Promise.all([
     fs.getDocs(fs.collection(db, "perfumes")),
     fs.getDocs(fs.collection(db, "costos")),
     fs.getDocs(fs.collection(db, "ventas")),
     fs.getDocs(fs.collection(db, "pedidos")),
     fs.getDocs(fs.collection(db, "proveedores")),
     fs.getDocs(fs.collection(db, "clientes")),
+    fs.getDocs(fs.collection(db, "devoluciones")),
     fs.getDocs(fs.query(fs.collection(db, "movimientos"), fs.orderBy("fecha", "desc"), fs.limit(30))),
   ]);
 
@@ -178,6 +184,10 @@ async function cargarTodo() {
     .map((d) => ({ id: d.id, ...d.data() }))
     .sort((a, b) => (a.nombre || "").localeCompare(b.nombre || "", "es"));
 
+  S.devoluciones = devolSnap.docs
+    .map((d) => ({ id: d.id, ...d.data() }))
+    .sort((a, b) => (b.fecha || "").localeCompare(a.fecha || ""));
+
   S.movimientos = movSnap.docs.map((d) => ({ id: d.id, ...d.data() }));
 
   // Config de moneda (documento único config/moneda)
@@ -187,6 +197,14 @@ async function cargarTodo() {
   } catch (e) {
     /* si no existe aún, quedan los valores por defecto */
   }
+
+  // Datos de facturación del negocio (config/negocio)
+  try {
+    const negDoc = await fs.getDoc(fs.doc(db, "config", "negocio"));
+    if (negDoc.exists()) S.negocio = { ...S.negocio, ...negDoc.data() };
+  } catch (e) {
+    /* sin datos de facturación aún */
+  }
 }
 
 function renderTodo() {
@@ -194,9 +212,12 @@ function renderTodo() {
   renderProductos();
   renderPedidos();
   renderVentas();
+  renderFacturas();
+  renderDevoluciones();
   renderDeudores();
   renderProveedores();
   renderMoneda();
+  renderNegocio();
 }
 
 // ═════════════════════ DASHBOARD ═════════════════════════════
@@ -629,6 +650,7 @@ async function confirmarPedido(pe) {
     const venta = {
       fecha: hoyISO(),
       cliente: pe.cliente || "Cliente web",
+      cedula: "",
       telefono: pe.telefono || "",
       credito: false,
       items: (pe.items || []).map((it) => ({
@@ -645,6 +667,7 @@ async function confirmarPedido(pe) {
       abonos: [{ fecha: hoyISO(), monto: pe.total || 0 }],
       notas: "Pedido web confirmado",
     };
+    venta.numeroFactura = await siguienteCorrelativo();
     const ref = await fs.addDoc(fs.collection(db, "ventas"), venta);
     for (const it of venta.items) {
       const p = S.productos.find((x) => x.id === it.productId);
@@ -712,6 +735,7 @@ function renderVentas() {
         <td class="num ${saldo > 0 ? "" : "muted"}">${fmt(saldo)}</td>
         <td>${estado}</td>
         <td class="acciones">
+          <button class="btn-icon" data-accion="factura" title="Ver / imprimir factura">${icon("factura")}</button>
           ${saldo > 0 ? `<button class="btn-icon" data-accion="abonar" title="Registrar abono">${icon("dolar")}</button>` : ""}
           <button class="btn-icon danger" data-accion="eliminar" title="Eliminar venta">${icon("basura")}</button>
         </td>
@@ -726,26 +750,34 @@ function modalVenta() {
     <h3>Registrar venta</h3>
     <form id="form-venta">
       <div class="form-grid">
-        <label class="field"><span>Cliente</span>
-          <input name="cliente" id="venta-cliente" required placeholder="Nombre del cliente" list="clientes-list" autocomplete="off" /></label>
+        <label class="field"><span>Cliente <span class="hint">nombre</span></span>
+          <input name="cliente" id="venta-cliente" required placeholder="Nombre del cliente" list="clientes-nombres" autocomplete="off" /></label>
+        <label class="field"><span>Cédula / RIF</span>
+          <input name="cedula" id="venta-cedula" placeholder="Ej. V-12345678" list="clientes-cedulas" autocomplete="off" /></label>
         <label class="field"><span>Teléfono</span>
-          <input name="telefono" id="venta-telefono" type="tel" placeholder="Ej. 0414 6039842" autocomplete="off" /></label>
+          <input name="telefono" id="venta-telefono" type="tel" placeholder="Ej. 0414 6039842" list="clientes-telefonos" autocomplete="off" /></label>
         <label class="field"><span>Tipo de precio</span>
           <select name="tipoPrecio" id="venta-tipo">
-            <option value="detal">Al detal</option>
             <option value="mayor">Al mayor</option>
+            <option value="detal">Al detal</option>
           </select></label>
         <label class="field"><span>Tipo de pago</span>
           <select name="tipoPago" id="venta-pago">
             <option value="contado">Contado (pagado)</option>
             <option value="credito">Crédito (a deber)</option>
           </select></label>
-        <label class="field full"><span>Producto</span>
+        <label class="field"><span>Producto</span>
           <input id="venta-buscar" placeholder="Escribe para buscar… (Enter agrega)" autocomplete="off" list="venta-productos" /></label>
       </div>
       <datalist id="venta-productos"></datalist>
-      <datalist id="clientes-list">
+      <datalist id="clientes-nombres">
         ${S.clientes.map((c) => `<option value="${esc(c.nombre)}">`).join("")}
+      </datalist>
+      <datalist id="clientes-cedulas">
+        ${S.clientes.filter((c) => c.cedula).map((c) => `<option value="${esc(c.cedula)}">${esc(c.nombre)}</option>`).join("")}
+      </datalist>
+      <datalist id="clientes-telefonos">
+        ${S.clientes.filter((c) => c.telefono).map((c) => `<option value="${esc(c.telefono)}">${esc(c.nombre)}</option>`).join("")}
       </datalist>
 
       <div class="cart-list" id="venta-carrito"><p class="muted">Agrega productos con el buscador.</p></div>
@@ -759,6 +791,11 @@ function modalVenta() {
       </div>
       <p class="hint" id="venta-hint">Venta de contado: se marca como pagada por el total.</p>
 
+      <label class="check-field" style="margin-top:0.6rem">
+        <input type="checkbox" name="emitirFactura" checked />
+        <span>Emitir factura al guardar</span>
+      </label>
+
       <div class="modal-actions">
         <button type="button" class="btn btn-ghost" data-cerrar>Cancelar</button>
         <button type="submit" class="btn btn-primary">Guardar venta</button>
@@ -771,7 +808,6 @@ function modalVenta() {
 
   const opciones = () =>
     S.productos
-      .filter((p) => (p.stock || 0) > 0)
       .map((p) => `<option value="${esc(`${p.nombre} — ${p.casa}`)}">`)
       .join("");
   $datalist.innerHTML = opciones();
@@ -809,10 +845,9 @@ function modalVenta() {
   function agregarProducto(texto) {
     const p = S.productos.find((x) => `${x.nombre} — ${x.casa}` === texto);
     if (!p) return;
-    if ((p.stock || 0) < 1) { toast("Sin stock disponible.", "error"); return; }
     const existente = S.carrito.find((it) => it.productId === p.id);
     if (existente) {
-      if (existente.cantidad < existente.stockMax) existente.cantidad += 1;
+      existente.cantidad += 1;
     } else {
       S.carrito.push({
         productId: p.id,
@@ -822,7 +857,7 @@ function modalVenta() {
         precioUnit: precioSegunTipo(p),
         costoUnit: p.costo || 0,
         tipo: $("#venta-tipo").value,
-        stockMax: p.stock || 0,
+        stockMax: 9999,
       });
     }
     $buscar.value = "";
@@ -852,12 +887,21 @@ function modalVenta() {
       : "Venta de contado: se marca como pagada por el total.";
   });
 
-  // Autocompleta el teléfono cuando se elige un cliente ya registrado
-  $("#venta-cliente").addEventListener("input", () => {
-    const nombre = $("#venta-cliente").value.trim().toLowerCase();
-    const cli = S.clientes.find((c) => c.nombre.toLowerCase() === nombre);
-    if (cli && cli.telefono) $("#venta-telefono").value = cli.telefono;
-  });
+  // Autocompleta los demás datos al escribir cédula, teléfono o nombre de un cliente guardado
+  function autollenarCliente() {
+    const cli = buscarCliente({
+      nombre: $("#venta-cliente").value,
+      cedula: $("#venta-cedula").value,
+      telefono: $("#venta-telefono").value,
+    });
+    if (!cli) return;
+    if (!$("#venta-cliente").value.trim() && cli.nombre) $("#venta-cliente").value = cli.nombre;
+    if (!$("#venta-cedula").value.trim() && cli.cedula) $("#venta-cedula").value = cli.cedula;
+    if (!$("#venta-telefono").value.trim() && cli.telefono) $("#venta-telefono").value = cli.telefono;
+  }
+  ["venta-cliente", "venta-cedula", "venta-telefono"].forEach((id) =>
+    $("#" + id).addEventListener("change", autollenarCliente)
+  );
 
   $("#venta-carrito").addEventListener("input", (e) => {
     const i = Number(e.target.dataset.i);
@@ -884,7 +928,9 @@ function modalVenta() {
     const total = totalCarrito();
     const credito = f.get("tipoPago") === "credito";
     const cliente = f.get("cliente").trim();
+    const cedula = f.get("cedula").trim();
     const telefono = f.get("telefono").trim();
+    const emitir = f.get("emitirFactura") === "on";
 
     // Contado: pagado = total. Crédito: pagado = abono inicial (puede ser 0).
     const pagado = credito
@@ -899,6 +945,7 @@ function modalVenta() {
     const venta = {
       fecha: hoyISO(),
       cliente,
+      cedula,
       telefono,
       credito,
       items: S.carrito.map(({ stockMax, ...it }) => it),
@@ -910,14 +957,16 @@ function modalVenta() {
 
     const { fs, db } = S.fb;
     try {
+      venta.numeroFactura = await siguienteCorrelativo();
       const ref = await fs.addDoc(fs.collection(db, "ventas"), venta);
       // Descuenta stock y registra movimientos
       for (const it of venta.items) {
         const p = S.productos.find((x) => x.id === it.productId);
         if (p) await ajustarStock(p, -it.cantidad, `venta a ${venta.cliente}`);
       }
-      await registrarCliente(cliente, telefono);
-      S.ventas.unshift({ id: ref.id, ...venta });
+      await registrarCliente(cliente, telefono, cedula);
+      const ventaGuardada = { id: ref.id, ...venta };
+      S.ventas.unshift(ventaGuardada);
       cerrarModal();
       renderTodo();
       toast(
@@ -926,6 +975,7 @@ function modalVenta() {
           : `Venta de ${fmt(total)} registrada ✓`,
         "success"
       );
+      if (emitir) mostrarFactura(ventaGuardada);
     } catch (err) {
       toast("Error al guardar la venta: " + err.message, "error");
     }
@@ -933,18 +983,319 @@ function modalVenta() {
 }
 
 /**
- * Registra o actualiza un cliente en la colección "clientes"
- * (identificado por su nombre normalizado). Guarda el teléfono más reciente.
+ * Registra o actualiza un cliente en la colección "clientes".
+ * El cliente se identifica por su cédula (si la tiene) o por su nombre.
+ * Queda buscable por cédula, nombre o teléfono.
  */
-async function registrarCliente(nombre, telefono) {
-  if (!nombre) return;
+async function registrarCliente(nombre, telefono, cedula) {
+  nombre = (nombre || "").trim();
+  telefono = (telefono || "").trim();
+  cedula = (cedula || "").trim();
+  if (!nombre && !cedula) return;
   const { fs, db } = S.fb;
-  const id = "c_" + normalizar(nombre).replace(/[^a-z0-9]+/g, "_").replace(/^_|_$/g, "");
-  const datos = { nombre, telefono: telefono || "", actualizado: hoyISO() };
+  // Reutiliza un cliente existente que coincida por cédula, nombre o teléfono
+  const existente = buscarCliente({ nombre, telefono, cedula });
+  const id =
+    existente?.id ||
+    (cedula
+      ? "c_" + cedula.replace(/[^0-9a-zA-Z]+/g, "")
+      : "c_" + normalizar(nombre).replace(/[^a-z0-9]+/g, "_").replace(/^_|_$/g, ""));
+  const datos = {
+    nombre: nombre || existente?.nombre || "",
+    cedula: cedula || existente?.cedula || "",
+    telefono: telefono || existente?.telefono || "",
+    actualizado: hoyISO(),
+  };
   await fs.setDoc(fs.doc(db, "clientes", id), datos, { merge: true });
-  const existente = S.clientes.find((c) => c.id === id);
   if (existente) Object.assign(existente, datos);
   else S.clientes.push({ id, ...datos });
+}
+
+/** Busca un cliente ya guardado por cédula, teléfono o nombre (en ese orden). */
+function buscarCliente({ nombre, telefono, cedula }) {
+  const soloDig = (t) => (t || "").replace(/\D/g, "");
+  if (cedula) {
+    const c = S.clientes.find((x) => soloDig(x.cedula) === soloDig(cedula) && soloDig(cedula));
+    if (c) return c;
+  }
+  if (telefono) {
+    const c = S.clientes.find((x) => soloDig(x.telefono) === soloDig(telefono) && soloDig(telefono));
+    if (c) return c;
+  }
+  if (nombre) {
+    const c = S.clientes.find((x) => normalizar(x.nombre) === normalizar(nombre) && nombre);
+    if (c) return c;
+  }
+  return null;
+}
+
+// ═════════════════════ FACTURAS ══════════════════════════════
+/** Devuelve el siguiente número de factura (correlativo) y lo persiste. */
+async function siguienteCorrelativo() {
+  const { fs, db } = S.fb;
+  const n = (Number(S.negocio.correlativo) || 0) + 1;
+  S.negocio.correlativo = n;
+  try {
+    await fs.setDoc(fs.doc(db, "config", "negocio"), { correlativo: n }, { merge: true });
+  } catch (e) {
+    /* si falla, igual devolvemos el número */
+  }
+  return n;
+}
+
+/** Muestra la factura imprimible de una venta en un modal. */
+function mostrarFactura(v) {
+  const n = S.negocio;
+  const numero = v.numeroFactura ? String(v.numeroFactura).padStart(5, "0") : "S/N";
+  const tasa = Number(S.moneda.tasaPropia) || 0;
+  const totalBs = tasa ? v.total * tasa : 0;
+  const saldo = saldoVenta(v);
+  const filas = (v.items || [])
+    .map(
+      (it) => `<tr>
+        <td class="c">${it.cantidad}</td>
+        <td>${esc(it.nombre)} <span class="f-casa">· ${esc(it.casa)}</span></td>
+        <td class="r">${fmt(it.precioUnit)}</td>
+        <td class="r">${fmt(it.precioUnit * it.cantidad)}</td>
+      </tr>`
+    )
+    .join("");
+  abrirModal(`
+    <div class="no-print factura-barra">
+      <button type="button" class="btn btn-primary" id="factura-imprimir">${icon("factura")} Imprimir / PDF</button>
+      <button type="button" class="btn btn-ghost" data-cerrar>Cerrar</button>
+    </div>
+    <div id="factura-print" class="factura-doc">
+      <div class="f-head">
+        <div class="f-emisor">
+          <p class="f-razon">${esc(n.razonSocial || "Almaria Perfumes")}</p>
+          ${n.rif ? `<p class="f-sub">RIF/C.I.: ${esc(n.rif)}</p>` : ""}
+          ${n.direccion ? `<p class="f-sub">${esc(n.direccion)}</p>` : ""}
+          ${n.telefono ? `<p class="f-sub">Tel: ${esc(n.telefono)}</p>` : ""}
+        </div>
+        <div class="f-meta">
+          <p class="f-titulo">FACTURA</p>
+          <p class="f-sub">N° ${numero}</p>
+          <p class="f-sub">${fmtFecha(v.fecha)}</p>
+        </div>
+      </div>
+      <div class="f-cliente">
+        <p><strong>Cliente:</strong> ${esc(v.cliente || "—")}</p>
+        ${v.cedula ? `<p><strong>Cédula / RIF:</strong> ${esc(v.cedula)}</p>` : ""}
+        ${v.telefono ? `<p><strong>Teléfono:</strong> ${esc(v.telefono)}</p>` : ""}
+      </div>
+      <table class="f-items">
+        <thead><tr><th class="c">Cant.</th><th>Descripción</th><th class="r">P. Unit</th><th class="r">Total</th></tr></thead>
+        <tbody>${filas}</tbody>
+      </table>
+      <div class="f-totales">
+        <div class="f-tot-row grande"><span>Total (USD)</span><strong>${fmt(v.total)}</strong></div>
+        ${tasa ? `<div class="f-tot-row"><span>Total en bolívares (tasa ${fmtBs(tasa)})</span><strong>Bs ${fmtBs(totalBs)}</strong></div>` : ""}
+        <div class="f-tot-row"><span>Forma de pago</span><span>${v.credito ? "Crédito" : "Contado"}</span></div>
+        <div class="f-tot-row"><span>Pagado</span><span>${fmt(v.pagado)}</span></div>
+        ${saldo > 0 ? `<div class="f-tot-row saldo"><span>Saldo pendiente</span><strong>${fmt(saldo)}</strong></div>` : ""}
+      </div>
+      <p class="f-pie">¡Gracias por su compra! · ${esc(n.razonSocial || "Almaria Perfumes")}</p>
+    </div>
+  `);
+  const imp = document.getElementById("factura-imprimir");
+  if (imp) imp.addEventListener("click", () => window.print());
+}
+
+function nombreMes(ym) {
+  if (!ym) return "";
+  const [y, m] = ym.split("-");
+  return new Date(Number(y), Number(m) - 1, 1)
+    .toLocaleDateString("es-VE", { month: "long", year: "numeric" });
+}
+
+// Control mensual de facturas emitidas
+function renderFacturas() {
+  const $mes = $("#factura-mes");
+  if ($mes && !$mes.value) $mes.value = S.facturaMes;
+  const mes = S.facturaMes;
+  const lista = S.ventas
+    .filter((v) => v.numeroFactura && (v.fecha || "").startsWith(mes))
+    .sort((a, b) => (b.numeroFactura || 0) - (a.numeroFactura || 0));
+  const totalMes = lista.reduce((s, v) => s + (v.total || 0), 0);
+  const tasa = Number(S.moneda.tasaPropia) || 0;
+
+  $("#facturas-stats").innerHTML = `
+    ${stat("Facturas del mes", lista.length, "", nombreMes(mes))}
+    ${stat("Total facturado", fmt(totalMes), "vino", "")}
+    ${tasa ? stat("Total en Bs", "Bs " + fmtBs(totalMes * tasa), "", `tasa ${fmtBs(tasa)}`) : ""}
+  `;
+
+  $("#facturas-empty").hidden = lista.length > 0;
+  $("#facturas-table").hidden = lista.length === 0;
+  $("#facturas-table tbody").innerHTML = lista
+    .map(
+      (v) => `<tr data-id="${v.id}">
+        <td class="num">${String(v.numeroFactura).padStart(5, "0")}</td>
+        <td class="muted" style="white-space:nowrap">${fmtFecha(v.fecha)}</td>
+        <td class="td-nombre">${esc(v.cliente || "—")}</td>
+        <td>${esc(v.cedula || "—")}</td>
+        <td class="num">${fmt(v.total)}</td>
+        <td class="acciones"><button class="btn-icon" data-factura="${v.id}" title="Ver / imprimir factura">${icon("factura")}</button></td>
+      </tr>`
+    )
+    .join("");
+}
+
+// ═════════════════════ DEVOLUCIONES ══════════════════════════
+function renderDevoluciones() {
+  const lista = S.devoluciones;
+  const mes = new Date().toISOString().slice(0, 7);
+  const delMes = lista.filter((d) => (d.fecha || "").startsWith(mes));
+  const pendientes = lista.filter((d) => d.estado !== "resuelta").length;
+
+  $("#devol-stats").innerHTML = `
+    ${stat("Devoluciones", lista.length, lista.length ? "red" : "green", "histórico")}
+    ${stat("Este mes", delMes.length, "", nombreMes(mes))}
+    ${stat("Pendientes", pendientes, pendientes ? "red" : "green", "por resolver")}
+  `;
+
+  $("#devol-empty").hidden = lista.length > 0;
+  $("#devol-table").hidden = lista.length === 0;
+  $("#devol-table tbody").innerHTML = lista
+    .map(
+      (d) => `<tr data-id="${d.id}">
+        <td class="muted" style="white-space:nowrap">${fmtFecha(d.fecha)}</td>
+        <td class="td-nombre">${esc(d.nombre)}${d.casa ? `<span class="td-sub">${esc(d.casa)}</span>` : ""}</td>
+        <td>${esc(d.cliente || "—")}</td>
+        <td>${esc(d.motivo || "—")}${d.notas ? `<span class="td-sub">${esc(d.notas)}</span>` : ""}</td>
+        <td class="num">${d.cantidad || 1}</td>
+        <td><span class="badge ${d.estado === "resuelta" ? "pagada" : "pendiente"}">${d.estado === "resuelta" ? "Resuelta" : "Pendiente"}</span></td>
+        <td class="acciones">
+          ${d.estado !== "resuelta" ? `<button class="btn-icon" data-devol-resolver="${d.id}" title="Marcar resuelta">${icon("check")}</button>` : ""}
+          <button class="btn-icon danger" data-devol-eliminar="${d.id}" title="Eliminar">${icon("basura")}</button>
+        </td>
+      </tr>`
+    )
+    .join("");
+}
+
+function modalDevolucion() {
+  abrirModal(`
+    <h3>Registrar devolución</h3>
+    <form id="form-devol">
+      <div class="form-grid">
+        <label class="field full"><span>Producto <span class="hint">perfume devuelto</span></span>
+          <input name="producto" id="devol-producto" required placeholder="Busca el perfume…" list="devol-productos" autocomplete="off" /></label>
+        <label class="field"><span>Cliente (opcional)</span>
+          <input name="cliente" placeholder="Nombre del cliente" list="clientes-nombres-d" autocomplete="off" /></label>
+        <label class="field"><span>Cantidad</span>
+          <input name="cantidad" type="number" min="1" step="1" value="1" /></label>
+        <label class="field full"><span>Motivo</span>
+          <select name="motivo">
+            <option>Perfume defectuoso</option>
+            <option>Dañado en traslado</option>
+            <option>Producto equivocado</option>
+            <option>No era lo esperado</option>
+            <option>Otro</option>
+          </select></label>
+        <label class="field full"><span>Notas (opcional)</span>
+          <input name="notas" placeholder="Detalle del defecto, N° de factura, etc." /></label>
+      </div>
+      <datalist id="devol-productos">
+        ${S.productos.map((p) => `<option value="${esc(`${p.nombre} — ${p.casa}`)}">`).join("")}
+      </datalist>
+      <datalist id="clientes-nombres-d">
+        ${S.clientes.map((c) => `<option value="${esc(c.nombre)}">`).join("")}
+      </datalist>
+      <div class="modal-actions">
+        <button type="button" class="btn btn-ghost" data-cerrar>Cancelar</button>
+        <button type="submit" class="btn btn-primary">Registrar devolución</button>
+      </div>
+    </form>
+  `);
+  $("#form-devol").addEventListener("submit", guardarDevolucion);
+}
+
+async function guardarDevolucion(e) {
+  e.preventDefault();
+  const f = new FormData(e.target);
+  const texto = f.get("producto").trim();
+  if (!texto) { toast("Indica el producto devuelto.", "error"); return; }
+  const p = S.productos.find((x) => `${x.nombre} — ${x.casa}` === texto);
+  const dev = {
+    fecha: hoyISO(),
+    productId: p?.id || "",
+    nombre: p ? p.nombre : texto,
+    casa: p ? p.casa : "",
+    cliente: f.get("cliente").trim(),
+    cantidad: Math.max(1, Number(f.get("cantidad")) || 1),
+    motivo: f.get("motivo"),
+    notas: f.get("notas").trim(),
+    estado: "pendiente",
+  };
+  const { fs, db } = S.fb;
+  try {
+    const ref = await fs.addDoc(fs.collection(db, "devoluciones"), dev);
+    S.devoluciones.unshift({ id: ref.id, ...dev });
+    cerrarModal();
+    renderDevoluciones();
+    toast("Devolución registrada ✓", "success");
+  } catch (err) {
+    toast("Error al registrar: " + err.message, "error");
+  }
+}
+
+async function resolverDevolucion(d) {
+  const { fs, db } = S.fb;
+  try {
+    await fs.updateDoc(fs.doc(db, "devoluciones", d.id), { estado: "resuelta" });
+    d.estado = "resuelta";
+    renderDevoluciones();
+    toast("Devolución marcada como resuelta ✓", "success");
+  } catch (err) {
+    toast("Error: " + err.message, "error");
+  }
+}
+
+async function eliminarDevolucion(d) {
+  if (!confirm("¿Eliminar esta devolución del registro?")) return;
+  const { fs, db } = S.fb;
+  try {
+    await fs.deleteDoc(fs.doc(db, "devoluciones", d.id));
+    S.devoluciones = S.devoluciones.filter((x) => x.id !== d.id);
+    renderDevoluciones();
+    toast("Devolución eliminada ✓", "success");
+  } catch (err) {
+    toast("Error: " + err.message, "error");
+  }
+}
+
+// ═════════════════════ DATOS DE FACTURACIÓN ══════════════════
+function renderNegocio() {
+  const n = S.negocio;
+  const set = (id, val) => {
+    const el = $("#" + id);
+    if (el && document.activeElement !== el) el.value = val || "";
+  };
+  set("neg-razon", n.razonSocial);
+  set("neg-rif", n.rif);
+  set("neg-direccion", n.direccion);
+  set("neg-telefono", n.telefono);
+}
+
+async function guardarNegocio(e) {
+  e.preventDefault();
+  const f = new FormData(e.target);
+  const datos = {
+    razonSocial: f.get("razonSocial").trim(),
+    rif: f.get("rif").trim(),
+    direccion: f.get("direccion").trim(),
+    telefono: f.get("telefono").trim(),
+  };
+  const { fs, db } = S.fb;
+  try {
+    await fs.setDoc(fs.doc(db, "config", "negocio"), datos, { merge: true });
+    Object.assign(S.negocio, datos);
+    toast("Datos de facturación guardados ✓", "success");
+  } catch (err) {
+    toast("Error al guardar: " + err.message, "error");
+  }
 }
 
 function modalAbono(v) {
@@ -1320,8 +1671,38 @@ function configurarEventos() {
     const v = S.ventas.find((x) => x.id === btn.closest("tr").dataset.id);
     if (!v) return;
     if (btn.dataset.accion === "abonar") modalAbono(v);
+    else if (btn.dataset.accion === "factura") mostrarFactura(v);
     else if (btn.dataset.accion === "eliminar") eliminarVenta(v);
   });
+
+  // Facturas (control mensual)
+  $("#factura-mes").addEventListener("change", (e) => {
+    S.facturaMes = e.target.value || S.facturaMes;
+    renderFacturas();
+  });
+  $("#facturas-table").addEventListener("click", (e) => {
+    const btn = e.target.closest("[data-factura]");
+    if (!btn) return;
+    const v = S.ventas.find((x) => x.id === btn.dataset.factura);
+    if (v) mostrarFactura(v);
+  });
+
+  // Devoluciones
+  $("#devol-nueva").addEventListener("click", modalDevolucion);
+  $("#devol-table").addEventListener("click", (e) => {
+    const res = e.target.closest("[data-devol-resolver]");
+    const del = e.target.closest("[data-devol-eliminar]");
+    if (res) {
+      const d = S.devoluciones.find((x) => x.id === res.dataset.devolResolver);
+      if (d) resolverDevolucion(d);
+    } else if (del) {
+      const d = S.devoluciones.find((x) => x.id === del.dataset.devolEliminar);
+      if (d) eliminarDevolucion(d);
+    }
+  });
+
+  // Datos de facturación del negocio
+  $("#form-negocio").addEventListener("submit", guardarNegocio);
 
   // Deudores
   $("#deuda-lista").addEventListener("click", (e) => {
