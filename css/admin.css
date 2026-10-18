@@ -978,3 +978,39 @@ input, select, textarea { font-family: inherit; font-size: 1rem; color: var(--in
   #factura-print { position: absolute; left: 0; top: 0; width: 100%; padding: 1rem 1.2rem; }
   .no-print { display: none !important; }
 }
+
+/* ══════════ FACTURA MANUAL (líneas) ══════════ */
+.fm-lineas-head,
+.fm-linea {
+  display: grid;
+  grid-template-columns: 1fr 70px 90px 70px 36px;
+  gap: 0.4rem;
+  align-items: center;
+}
+.fm-lineas-head {
+  font-size: 0.68rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--ink-faint);
+  padding: 0 0.2rem 0.3rem;
+}
+.fm-lineas-head span:nth-child(2),
+.fm-lineas-head span:nth-child(3),
+.fm-lineas-head span:nth-child(4) { text-align: right; }
+.fm-linea { margin-bottom: 0.4rem; }
+.fm-linea .input { padding: 0.45rem 0.6rem; }
+.fm-linea .fm-cant, .fm-linea .fm-precio { text-align: right; }
+.fm-sub { text-align: right; font-variant-numeric: tabular-nums; font-size: 0.9rem; }
+
+@media (max-width: 640px) {
+  .fm-lineas-head { display: none; }
+  .fm-linea {
+    grid-template-columns: 1fr 1fr;
+    gap: 0.4rem;
+    padding: 0.5rem;
+    border: 1px solid var(--line);
+    border-radius: 10px;
+  }
+  .fm-linea .fm-desc { grid-column: 1 / -1; }
+  .fm-sub { grid-column: 1; }
+}

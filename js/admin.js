@@ -1142,6 +1142,178 @@ function renderFacturas() {
     .join("");
 }
 
+/** Factura manual: formulario con líneas libres (no pasa por inventario). */
+function modalFacturaManual() {
+  let lineas = [{ desc: "", cant: 1, precio: 0 }];
+  const hoy = new Date().toISOString().slice(0, 10);
+
+  function filasHTML() {
+    return lineas
+      .map(
+        (l, i) => `<div class="fm-linea" data-i="${i}">
+          <input class="input fm-desc" data-i="${i}" placeholder="Descripción (producto o servicio)" value="${esc(l.desc)}" />
+          <input class="input fm-cant" type="number" min="1" step="1" data-i="${i}" value="${l.cant}" title="Cantidad" />
+          <input class="input fm-precio" type="number" min="0" step="0.01" data-i="${i}" value="${l.precio}" title="Precio unitario" />
+          <strong class="fm-sub">${fmt(l.cant * l.precio)}</strong>
+          <button type="button" class="btn-icon danger" data-fm-quitar="${i}" title="Quitar">${icon("basura")}</button>
+        </div>`
+      )
+      .join("");
+  }
+  const total = () => lineas.reduce((s, l) => s + (Number(l.cant) || 0) * (Number(l.precio) || 0), 0);
+
+  abrirModal(`
+    <h3>Nueva factura manual</h3>
+    <form id="form-fman">
+      <div class="form-grid">
+        <label class="field"><span>Cliente</span>
+          <input name="cliente" id="fm-cliente" required placeholder="Nombre del cliente" list="clientes-nombres-f" autocomplete="off" /></label>
+        <label class="field"><span>Cédula / RIF</span>
+          <input name="cedula" id="fm-cedula" placeholder="Ej. V-12345678" list="clientes-cedulas-f" autocomplete="off" /></label>
+        <label class="field"><span>Teléfono</span>
+          <input name="telefono" id="fm-telefono" type="tel" placeholder="Ej. 0414 6039842" list="clientes-telefonos-f" autocomplete="off" /></label>
+        <label class="field"><span>Fecha</span>
+          <input name="fecha" type="date" value="${hoy}" /></label>
+      </div>
+      <datalist id="clientes-nombres-f">${S.clientes.map((c) => `<option value="${esc(c.nombre)}">`).join("")}</datalist>
+      <datalist id="clientes-cedulas-f">${S.clientes.filter((c) => c.cedula).map((c) => `<option value="${esc(c.cedula)}">${esc(c.nombre)}</option>`).join("")}</datalist>
+      <datalist id="clientes-telefonos-f">${S.clientes.filter((c) => c.telefono).map((c) => `<option value="${esc(c.telefono)}">${esc(c.nombre)}</option>`).join("")}</datalist>
+
+      <p class="panel-title" style="margin:1rem 0 0.4rem">Conceptos a facturar</p>
+      <div class="fm-lineas-head"><span>Descripción</span><span>Cant.</span><span>P. Unit</span><span>Total</span><span></span></div>
+      <div id="fm-lineas">${filasHTML()}</div>
+      <button type="button" class="btn btn-ghost" id="fm-agregar" style="margin-top:0.5rem">+ Agregar línea</button>
+
+      <div class="cart-total" style="margin-top:0.8rem"><span>Total</span><strong id="fm-total">${fmt(total())}</strong></div>
+
+      <div class="form-grid" style="margin-top:0.6rem">
+        <label class="field"><span>Tipo de pago</span>
+          <select name="tipoPago" id="fm-pago">
+            <option value="contado">Contado (pagado)</option>
+            <option value="credito">Crédito (a deber)</option>
+          </select></label>
+        <label class="field" id="fm-abono-field" hidden><span>Abono inicial</span>
+          <input name="pagado" type="number" step="0.01" min="0" value="0" id="fm-pagado" /></label>
+      </div>
+
+      <label class="check-field" style="margin-top:0.4rem">
+        <input type="checkbox" name="emitirFactura" checked />
+        <span>Mostrar factura para imprimir al guardar</span>
+      </label>
+
+      <div class="modal-actions">
+        <button type="button" class="btn btn-ghost" data-cerrar>Cancelar</button>
+        <button type="submit" class="btn btn-primary">Guardar y facturar</button>
+      </div>
+    </form>
+  `);
+
+  const $lineas = $("#fm-lineas");
+  const refrescar = () => {
+    $lineas.innerHTML = filasHTML();
+    $("#fm-total").textContent = fmt(total());
+  };
+
+  $("#fm-agregar").addEventListener("click", () => {
+    lineas.push({ desc: "", cant: 1, precio: 0 });
+    refrescar();
+  });
+
+  $lineas.addEventListener("input", (e) => {
+    const i = Number(e.target.dataset.i);
+    if (Number.isNaN(i) || !lineas[i]) return;
+    if (e.target.classList.contains("fm-desc")) lineas[i].desc = e.target.value;
+    else if (e.target.classList.contains("fm-cant")) lineas[i].cant = Math.max(1, Number(e.target.value) || 1);
+    else if (e.target.classList.contains("fm-precio")) lineas[i].precio = Math.max(0, Number(e.target.value) || 0);
+    // actualiza solo el subtotal y total sin re-render (no perder foco)
+    const row = e.target.closest(".fm-linea");
+    if (row) row.querySelector(".fm-sub").textContent = fmt(lineas[i].cant * lineas[i].precio);
+    $("#fm-total").textContent = fmt(total());
+  });
+
+  $lineas.addEventListener("click", (e) => {
+    const btn = e.target.closest("[data-fm-quitar]");
+    if (!btn) return;
+    lineas.splice(Number(btn.dataset.fmQuitar), 1);
+    if (!lineas.length) lineas.push({ desc: "", cant: 1, precio: 0 });
+    refrescar();
+  });
+
+  $("#fm-pago").addEventListener("change", () => {
+    $("#fm-abono-field").hidden = $("#fm-pago").value !== "credito";
+  });
+
+  // Autocompletar cliente por cédula/teléfono/nombre
+  ["fm-cliente", "fm-cedula", "fm-telefono"].forEach((id) =>
+    $("#" + id).addEventListener("change", () => {
+      const cli = buscarCliente({
+        nombre: $("#fm-cliente").value,
+        cedula: $("#fm-cedula").value,
+        telefono: $("#fm-telefono").value,
+      });
+      if (!cli) return;
+      if (!$("#fm-cliente").value.trim() && cli.nombre) $("#fm-cliente").value = cli.nombre;
+      if (!$("#fm-cedula").value.trim() && cli.cedula) $("#fm-cedula").value = cli.cedula;
+      if (!$("#fm-telefono").value.trim() && cli.telefono) $("#fm-telefono").value = cli.telefono;
+    })
+  );
+
+  $("#form-fman").addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const items = lineas
+      .filter((l) => l.desc.trim() && Number(l.precio) >= 0 && Number(l.cant) >= 1)
+      .map((l) => ({
+        productId: "",
+        nombre: l.desc.trim(),
+        casa: "",
+        cantidad: Number(l.cant),
+        precioUnit: Number(l.precio),
+        costoUnit: 0,
+        tipo: "manual",
+      }));
+    if (!items.length) { toast("Agrega al menos un concepto con descripción.", "error"); return; }
+
+    const f = new FormData(e.target);
+    const totalV = items.reduce((s, it) => s + it.precioUnit * it.cantidad, 0);
+    const credito = f.get("tipoPago") === "credito";
+    const pagado = credito ? Math.min(Number(f.get("pagado")) || 0, totalV) : totalV;
+    const fechaStr = f.get("fecha");
+    const fecha = fechaStr ? new Date(fechaStr + "T12:00:00").toISOString() : hoyISO();
+    const cliente = f.get("cliente").trim();
+    const cedula = f.get("cedula").trim();
+    const telefono = f.get("telefono").trim();
+
+    const venta = {
+      fecha,
+      cliente,
+      cedula,
+      telefono,
+      credito,
+      manual: true,
+      items,
+      total: totalV,
+      pagado,
+      abonos: pagado > 0 ? [{ fecha: hoyISO(), monto: pagado }] : [],
+      notas: "Factura manual",
+    };
+
+    const { fs, db } = S.fb;
+    try {
+      venta.numeroFactura = await siguienteCorrelativo();
+      const ref = await fs.addDoc(fs.collection(db, "ventas"), venta);
+      await registrarCliente(cliente, telefono, cedula);
+      const guardada = { id: ref.id, ...venta };
+      S.ventas.unshift(guardada);
+      cerrarModal();
+      renderTodo();
+      toast(`Factura N° ${String(venta.numeroFactura).padStart(5, "0")} creada ✓`, "success");
+      if (f.get("emitirFactura") === "on") mostrarFactura(guardada);
+    } catch (err) {
+      toast("Error al crear la factura: " + err.message, "error");
+    }
+  });
+}
+
 // ═════════════════════ DEVOLUCIONES ══════════════════════════
 function renderDevoluciones() {
   const lista = S.devoluciones;
@@ -1676,6 +1848,7 @@ function configurarEventos() {
   });
 
   // Facturas (control mensual)
+  $("#factura-manual").addEventListener("click", modalFacturaManual);
   $("#factura-mes").addEventListener("change", (e) => {
     S.facturaMes = e.target.value || S.facturaMes;
     renderFacturas();
